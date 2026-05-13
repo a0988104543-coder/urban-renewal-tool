@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"/></head>
+<body>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding:1rem;}
+/* Nav */
+.snav{display:flex;gap:0;border-bottom:1.5px solid #e5e5e5;margin-bottom:20px;}
+.snb{padding:10px 22px;border:none;background:none;cursor:pointer;font-size:13px;color:#666;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;font-family:inherit;transition:all .2s;}
+.snb.active{color:#1D9E75;border-bottom-color:#1D9E75;font-weight:600;}
+.snb:hover:not(.active){color:#111;}
+.snb:disabled{cursor:default;opacity:.5;}
+.pg{display:none;}.pg.active{display:block;}
+/* Grid */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+/* Form */
+.sec{font-size:10.5px;font-weight:600;letter-spacing:.1em;color:#888;text-transform:uppercase;margin:0 0 10px;}
+.fd{display:flex;flex-direction:column;gap:4px;}
+.fd label{font-size:12px;color:#555;}
+.fd input,.fd select{font-size:13px;padding:7px 10px;border-radius:6px;border:1px solid #ddd;background:#fff;color:#1a1a1a;width:100%;}
+.fd input:focus,.fd select:focus{outline:none;border-color:#1D9E75;box-shadow:0 0 0 2px rgba(29,158,117,.12);}
+.fd input.auto{border-color:#378ADD;background:#f0f6ff;}
+.fd input.warn{border-color:#D85A30;background:#fff8f5;}
+.un{font-size:10.5px;color:#aaa;margin-top:2px;}
+.hn{font-size:11px;margin-top:3px;font-weight:500;}
+.ht{color:#0F6E56;}.ha{color:#854F0B;}.hr{color:#D85A30;}
+.div{border:none;border-top:1px solid #eee;margin:14px 0;}
+/* Cards */
+.card{background:#f5f5f5;border-radius:8px;padding:12px 14px;}
+.card .ml{font-size:11px;color:#666;margin:0 0 3px;}
+.card .mv{font-size:16px;font-weight:600;color:#111;margin:0;font-family:monospace;}
+.card .ms{font-size:11px;color:#888;margin:2px 0 0;}
+.hi{border-radius:8px;padding:12px 14px;}
+.hi .ml{font-size:11px;margin:0 0 3px;font-weight:500;}
+.hi .mv{font-size:19px;font-weight:600;margin:0;font-family:monospace;}
+.hi .ms{font-size:11px;margin:2px 0 0;}
+.teal{background:#E1F5EE;border:1px solid #9FE1CB;}.teal .ml{color:#0F6E56;}.teal .mv{color:#085041;}.teal .ms{color:#1D9E75;}
+.amber{background:#FAEEDA;border:1px solid #FAC775;}.amber .ml{color:#854F0B;}.amber .mv{color:#633806;}.amber .ms{color:#BA7517;}
+.blue{background:#E6F1FB;border:1px solid #B5D4F4;}.blue .ml{color:#185FA5;}.blue .mv{color:#0C447C;}.blue .ms{color:#378ADD;}
+.purple{background:#EEEDFE;border:1px solid #CECBF6;}.purple .ml{color:#534AB7;}.purple .mv{color:#3C3489;}.purple .ms{color:#7F77DD;}
+.green2{background:#EAF3DE;border:1px solid #C0DD97;}.green2 .ml{color:#3B6D11;}.green2 .mv{color:#27500A;}.green2 .ms{color:#639922;}
+.coral{background:#FAECE7;border:1px solid #F5C4B3;}.coral .ml{color:#993C1D;}.coral .mv{color:#712B13;}.coral .ms{color:#D85A30;}
+/* Breakdown rows */
+.brow{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:12px;}
+.brow:last-child{border-bottom:none;}
+.bl{color:#666;}.bv{font-family:monospace;font-weight:500;color:#111;}
+.bv-t{font-family:monospace;font-weight:500;color:#0F6E56;}
+.bv-a{font-family:monospace;font-weight:500;color:#854F0B;}
+.bv-b{font-family:monospace;font-weight:500;color:#185FA5;}
+.bv-p{font-family:monospace;font-weight:500;color:#3C3489;}
+.bv-g{font-family:monospace;font-weight:500;color:#27500A;}
+.bv-r{font-family:monospace;font-weight:500;color:#D85A30;}
+.tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:20px;font-weight:500;margin-left:4px;}
+.tg-t{background:#E1F5EE;color:#0F6E56;}.tg-t2{background:#9FE1CB;color:#085041;}.tg-t3{background:#5DCAA5;color:#04342C;}
+.tg-a{background:#FAEEDA;color:#854F0B;}.tg-b{background:#E6F1FB;color:#185FA5;}
+.tg-p{background:#EEEDFE;color:#534AB7;}.tg-g{background:#EAF3DE;color:#3B6D11;}.tg-r{background:#FAECE7;color:#993C1D;}
+.al{border-radius:7px;padding:8px 12px;font-size:11.5px;margin-bottom:8px;}
+.al-w{background:#FAEEDA;border:1px solid #FAC775;color:#854F0B;}
+.al-o{background:#E1F5EE;border:1px solid #9FE1CB;color:#0F6E56;}
+.al-i{background:#E6F1FB;border:1px solid #B5D4F4;color:#185FA5;}
+.sbar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:10px 0 6px;}
+.leg{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;}
+.leg span{font-size:11px;color:#666;display:flex;align-items:center;gap:4px;}
+.leg i{display:inline-block;width:10px;height:10px;border-radius:2px;}
+.fx{background:#f7f7f7;border-radius:7px;padding:10px 14px;font-size:11.5px;color:#666;line-height:1.8;margin-top:8px;}
+.fx code{font-family:monospace;color:#111;font-size:11px;}
+.note{font-size:11px;color:#aaa;margin-top:12px;line-height:1.6;}
+/* Box */
+.bbox{background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:14px 16px;margin-bottom:10px;}
+/* Mode cols */
+.mcols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:10px;}
+.mcol{border:1px solid #e5e5e5;border-radius:10px;padding:14px 16px;}
+.mcol-hd{font-size:13px;font-weight:600;margin:0 0 12px;display:flex;align-items:center;gap:6px;}
+.mcol-sub{font-size:11px;color:#888;}
+/* Result table */
+.rtbl{width:100%;border-collapse:collapse;font-size:12px;}
+.rtbl th{text-align:right;padding:5px 8px;background:#f7f7f7;font-weight:500;font-size:11px;color:#888;border-bottom:1px solid #eee;}
+.rtbl th:first-child{text-align:left;}
+.rtbl td{padding:5px 8px;border-bottom:1px solid #f0f0f0;font-family:monospace;}
+.rtbl td:first-child{font-family:inherit;color:#555;font-size:11.5px;}
+.rtbl .tr-total td{font-weight:600;background:#f7f7f7;color:#111;}
+.rtbl .tr-rev td{color:#0F6E56;font-weight:600;}
+.rtbl .tr-profit td{color:#185FA5;font-weight:600;}
+.rtbl .tr-roe td{color:#3C3489;font-weight:700;font-size:14px;}
+.rtbl .tr-roa td{color:#854F0B;font-weight:700;font-size:14px;}
+.rtbl .tr-summary td{font-weight:700;background:#1D9E75;color:#fff;font-size:13px;border-top:2px solid #0F6E56;}
+.rtbl .tr-sub td{color:#378ADD;font-size:11.5px;background:#F0F6FF;}
+/* Step nav buttons */
+.nav-btns{display:flex;justify-content:space-between;align-items:center;margin-top:20px;}
+.btn-p{padding:9px 20px;background:#f0f0f0;color:#333;border:1px solid #ddd;border-radius:7px;cursor:pointer;font-size:13px;font-family:inherit;}
+.btn-n{padding:9px 20px;background:#1D9E75;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;}
+.sum-ok{color:#0F6E56;font-size:12px;font-weight:500;}
+.sum-err{color:#D85A30;font-size:12px;font-weight:500;}
+/* S1 summary bar */
+.s1-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:#f7f7f7;border-radius:8px;padding:12px;margin-bottom:16px;}
+.s1-item .sl{font-size:10.5px;color:#888;margin-bottom:2px;}
+.s1-item .sv{font-size:14px;font-weight:600;color:#111;font-family:monospace;}
+/* Return calculation */
+.ret-party{border:1px solid #e5e5e5;border-radius:10px;overflow:hidden;margin-bottom:12px;}
+.ret-party-hd{padding:10px 14px;font-size:13px;font-weight:600;display:flex;justify-content:space-between;align-items:center;}
+.ret-party-bd{padding:10px 14px;}
+.hd-builder{background:#E1F5EE;color:#085041;}
+.hd-owner{background:#E6F1FB;color:#0C447C;}
+.hd-commission{background:#EEEDFE;color:#3C3489;}
+.hd-blend{background:#1D9E75;color:#fff;}
+.cb-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.cb-row input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:#1D9E75;}
+.cb-row label{font-size:12px;color:#555;cursor:pointer;user-select:none;}
+.cb-row .un{font-size:10.5px;color:#aaa;margin:0;}
+.neg-box{background:#FFF8EC;border:1px dashed #FAC775;border-radius:8px;padding:12px 14px;margin:10px 0;}
+.neg-hd{font-size:11.5px;font-weight:600;color:#854F0B;margin-bottom:10px;letter-spacing:.04em;}
+.neg-tag{display:inline-block;font-size:10px;padding:1px 7px;border-radius:10px;background:#FFF0C2;color:#854F0B;margin-left:4px;font-weight:500;}
+.delta-pos{color:#0F6E56;font-weight:600;}
+.delta-neg{color:#D85A30;font-weight:600;}
+</style>
+
+<div>
+<!-- Navigation -->
+<div class="snav">
+  <button class="snb active" id="n1" onclick="goStep(1)">① 規模試算</button>
+  <button class="snb" id="n2" onclick="goStep(2)">② 總銷與成本</button>
+  <button class="snb" id="n3" onclick="goStep(3)">③ 分回計算</button>
+  <button class="snb" id="n4" onclick="goStep(4)">④ 地主個別試算</button>
+</div>
+
+<!-- Save/Load toolbar -->
+<div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:14px;">
+  <span style="font-size:11px;color:#aaa;" id="save-status"></span>
+  <input type="file" id="load-file" accept=".json" style="display:none" onchange="loadProject(this)"/>
+  <button onclick="document.getElementById('load-file').click()" style="padding:5px 14px;font-size:12px;background:#fff;border:1px solid #ddd;border-radius:6px;cursor:pointer;color:#555;font-family:inherit;">📂 載入專案</button>
+  <button onclick="saveProject()" style="padding:5px 14px;font-size:12px;background:#1D9E75;border:none;border-radius:6px;cursor:pointer;color:#fff;font-weight:500;font-family:inherit;">💾 儲存專案</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ STEP 1 -->
+<div class="pg active" id="pg1">
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+  <a href="https://cloud.land.gov.taipei/cloud/into/index.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:#E6F1FB;border:1px solid #B5D4F4;border-radius:6px;color:#185FA5;font-size:12px;text-decoration:none;font-weight:500;">🔗 台北市地政雲端服務</a>
+  <a href="https://cloud.land.gov.taipei/urland/urban.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:#E6F1FB;border:1px solid #B5D4F4;border-radius:6px;color:#185FA5;font-size:12px;text-decoration:none;font-weight:500;">🔗 台北市都市計畫查詢</a>
+  <a href="https://bim.udd.gov.taipei/UDDPlanMap/" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:#E6F1FB;border:1px solid #B5D4F4;border-radius:6px;color:#185FA5;font-size:12px;text-decoration:none;font-weight:500;">🔗 都市計畫地理資訊</a>
+</div>
+<p class="sec">基本資料</p>
+<div class="g3">
+  <div class="fd"><label>地段號／案名</label><input type="text" id="f-name" placeholder="例：大安段一小段 123地號"/></div>
+  <div class="fd"><label>縣市別</label>
+    <select id="f-city">
+      <option value="taipei">台北市</option>
+      <option value="newtaipei">新北市</option>
+      <option value="other">其他縣市</option>
+    </select>
+  </div>
+  <div class="fd"><label>使用分區</label>
+    <select id="f-zone">
+      <option value="">— 請選擇 —</option>
+      <option value="住一">第一種住宅區</option>
+      <option value="住二">第二種住宅區</option>
+      <option value="住三">第三種住宅區</option>
+      <option value="住四">第四種住宅區</option>
+      <option value="商業">商業區</option>
+      <option value="工業">工業區</option>
+    </select>
+  </div>
+</div>
+<hr class="div"/>
+<p class="sec">面積與容積</p>
+<div class="g3">
+  <div class="fd"><label>基地面積</label><input type="number" id="f-area" placeholder="0" min="0" step="0.01"/><div class="un" id="area-lbl">坪</div></div>
+  <div class="fd"><label>面積單位</label><select id="f-unit"><option value="ping">坪</option><option value="m2">平方公尺 (m²)</option></select></div>
+  <div class="fd"><label>現有建物面積（參考）</label><input type="number" id="f-exist" placeholder="0" min="0" step="0.01"/><div class="un" id="exist-lbl">坪</div></div>
+</div>
+<div class="g4" style="margin-top:10px;">
+  <div class="fd"><label>法定容積率</label><input type="number" id="f-far" placeholder="例：225" min="0" max="1000"/><div class="un">%</div></div>
+  <div class="fd"><label>建蔽率</label><input type="number" id="f-bcr" placeholder="例：45" min="0" max="100"/><div class="un">%</div></div>
+  <div class="fd"><label>容積獎勵率</label><input type="number" id="f-bonus" placeholder="例：30" min="0" max="200"/><div class="un">%（以法定容積為基準）</div></div>
+  <div class="fd"><label>容積移轉率</label><input type="number" id="f-transfer" placeholder="例：10" min="0" max="100"/><div class="un">%（以法定容積為基準）</div></div>
+</div>
+<hr class="div"/>
+<p class="sec">銷坪比 ／ 公設比 ／ 陽台比例</p>
+<div class="fx"><code>K = 總銷坪÷容積面積</code>　<code>P = 公設坪÷總銷坪</code>　<code>P=(K−1−B)÷K</code>　<code>K=(1+B)÷(1−P)</code>　B法規上限15%</div>
+<div class="g3" style="margin-top:10px;">
+  <div class="fd"><label>① 銷坪比 K（手動輸入）</label><input type="number" id="f-K" placeholder="例：1.50" min="1.01" max="3" step="0.01"/><div class="un">倍　藍框=自動推算</div><div class="hn ht" id="K-hint"></div></div>
+  <div class="fd"><label>② 公設比 P（手動輸入）</label><input type="number" id="f-P" placeholder="例：32" min="0" max="60" step="0.1"/><div class="un">%　藍框=自動推算</div><div class="hn ha" id="P-hint"></div></div>
+  <div class="fd"><label>③ 陽台比例 B</label><input type="number" id="f-B" value="5" min="0" max="30" step="0.1"/><div class="un">%（法規上限15%）</div><div class="hn" id="B-hint"></div></div>
+</div>
+<hr class="div"/>
+<p class="sec">停車與地下室</p>
+<div class="g4">
+  <div class="fd"><label>預計戶數</label><input type="number" id="f-units" placeholder="例：20" min="1"/><div class="un">戶</div></div>
+  <div class="fd"><label>汽車位面積</label><input type="number" id="f-parksize" value="12" min="8" max="20" step="0.5"/><div class="un">坪／位（預設12坪）</div></div>
+  <div class="fd"><label>機車位面積</label><input type="number" id="f-motosize" value="1.9" min="1" max="5" step="0.1"/><div class="un">坪／位（預設1.9坪）</div></div>
+  <div class="fd"><label>地下室開挖率</label><input type="number" id="f-excavate" value="70" min="30" max="100"/><div class="un">%（預設70%）</div></div>
+</div>
+<div class="fx" id="law-box" style="margin-top:8px;"></div>
+<hr class="div"/>
+<p class="sec">樓高限制</p>
+<div class="g4">
+  <div class="fd"><label>面前道路寬度 W</label><input type="number" id="f-W" placeholder="例：12" min="0" step="0.5"/><div class="un">公尺（m）</div></div>
+  <div class="fd"><label>退縮距離 D</label><input type="number" id="f-D" value="0" min="0" step="0.5"/><div class="un">公尺（無退縮填0）</div></div>
+  <div class="fd"><label>1樓層高 h₁</label><input type="number" id="f-h1" value="4.0" min="2.5" max="8" step="0.1"/><div class="un">公尺（預設4.0m）</div></div>
+  <div class="fd"><label>標準層高 hₛ</label><input type="number" id="f-hs" value="3.2" min="2.5" max="6" step="0.1"/><div class="un">公尺（預設3.2m）</div></div>
+</div>
+<div class="fx" id="hfb" style="margin-top:8px;"></div>
+<hr class="div"/>
+<p class="sec">地價資料（選填）</p>
+<div class="g3">
+  <div class="fd"><label>公告現值</label><input type="number" id="f-ann" placeholder="0" min="0"/><div class="un">元／平方公尺</div></div>
+  <div class="fd"><label>公告地價</label><input type="number" id="f-lp" placeholder="0" min="0"/><div class="un">元／平方公尺</div></div>
+  <div class="fd"><label>市場地價（估）</label><input type="number" id="f-mkt" placeholder="0" min="0"/><div class="un">元／平方公尺</div></div>
+</div>
+<hr class="div"/>
+<p class="sec">試算結果</p>
+<div class="g4" style="margin-bottom:10px;">
+  <div class="hi teal"><p class="ml">總容積樓地板面積</p><p class="mv" id="r-total">—</p><p class="ms" id="r-total-s"></p></div>
+  <div class="hi amber"><p class="ml">總銷坪（地上登記）</p><p class="mv" id="r-gross">—</p><p class="ms" id="r-gross-s"></p><p class="ms" id="r-salefar" style="margin-top:3px;font-size:10px;color:#854F0B;"></p></div>
+  <div class="hi blue"><p class="ml">地下室樓地板面積</p><p class="mv" id="r-base">—</p><p class="ms" id="r-base-s"></p></div>
+  <div class="hi purple"><p class="ml">全棟總樓地板面積</p><p class="mv" id="r-grand">—</p><p class="ms" id="r-grand-s"></p></div>
+</div>
+<div class="g4" style="margin-bottom:10px;">
+  <div class="hi green2"><p class="ml">最終採用樓層數</p><p class="mv" id="r-floors">—</p><p class="ms" id="r-floors-s"></p></div>
+  <div class="card"><p class="ml">高度限制樓層</p><p class="mv" id="r-hfloors">—</p><p class="ms" id="r-hfloors-s">未輸入道路寬度</p></div>
+  <div class="card"><p class="ml">總汽車位（法定＋自設）</p><p class="mv" id="r-car">—</p><p class="ms" id="r-car-s">—</p></div>
+  <div class="card"><p class="ml">法定機車位</p><p class="mv" id="r-moto">—</p><p class="ms" id="r-moto-s">—</p></div>
+</div>
+<div id="s1-alerts"></div>
+<div class="bbox">
+  <p class="sec" style="margin-bottom:10px;">完整計算拆解</p>
+  <div class="brow"><span class="bl">基地面積</span><span class="bv" id="b-area">—</span></div>
+  <div class="brow"><span class="bl">法定容積<span class="tag tg-t">法定</span></span><span class="bv-t" id="b-legal">—</span></div>
+  <div class="brow"><span class="bl">＋ 獎勵容積<span class="tag tg-t2">獎勵</span></span><span class="bv-t" id="b-bonus">—</span></div>
+  <div class="brow"><span class="bl">＋ 移轉容積<span class="tag tg-t3">移轉</span></span><span class="bv-t" id="b-xfer">—</span></div>
+  <div class="brow" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px;"><span class="bl" style="font-weight:600;color:#111;">總容積樓地板面積</span><span class="bv-t" style="font-size:14px;" id="b-total">—</span></div>
+  <div class="brow" style="margin-top:8px;"><span class="bl">× 銷坪比 K<span class="tag tg-a">K=<span id="b-Kv">—</span></span></span><span class="bv-a" id="b-Ks">—</span></div>
+  <div class="brow"><span class="bl">　主建物</span><span class="bv-a" id="b-main">—</span></div>
+  <div class="brow"><span class="bl">　陽台（容積×B）<span class="tag tg-a">B=<span id="b-Bv">—</span>%</span></span><span class="bv-a" id="b-bal">—</span></div>
+  <div class="brow"><span class="bl">　公設（總銷×P）<span class="tag tg-a">P=<span id="b-Pv">—</span>%</span></span><span class="bv-a" id="b-com">—</span></div>
+  <div class="brow" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px;"><span class="bl" style="font-weight:600;color:#111;">總銷坪</span><span class="bv-a" style="font-size:14px;" id="b-gross">—</span></div>
+  <div class="brow" style="margin-top:8px;"><span class="bl">最大建築面積（基地×建蔽）</span><span class="bv" id="b-maxb">—</span></div>
+  <div class="brow"><span class="bl">容積推算樓層</span><span class="bv-g" id="b-ffl">—</span></div>
+  <div class="brow"><span class="bl">高度公式<span class="tag tg-b" id="b-ctag">—</span></span><span class="bv-b" id="b-Hf">—</span></div>
+  <div class="brow"><span class="bl">分區絕對限高</span><span class="bv" id="b-Hab">—</span></div>
+  <div class="brow"><span class="bl">採用高度上限</span><span class="bv-b" id="b-Hlim">—</span></div>
+  <div class="brow"><span class="bl">高度限制樓層</span><span class="bv-b" id="b-Hfl">—</span></div>
+  <div class="brow" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px;"><span class="bl" style="font-weight:600;color:#111;">最終樓層數</span><span class="bv-g" style="font-size:14px;" id="b-ffl2">—</span></div>
+  <div class="brow" style="margin-top:8px;"><span class="bl">地下室單層面積<span class="tag tg-b">地下室</span></span><span class="bv-b" id="b-b1">—</span></div>
+  <div class="brow"><span class="bl">法定汽車位<span class="tag tg-b">汽車</span></span><span class="bv-b" id="b-carl">—</span></div>
+  <div class="brow"><span class="bl">法定機車位<span class="tag tg-r">機車</span></span><span class="bv-r" id="b-motol">—</span></div>
+  <div class="brow"><span class="bl">法定總停車需求面積</span><span class="bv" id="b-pneed">—</span></div>
+  <div class="brow"><span class="bl">需挖層數</span><span class="bv-b" id="b-bfl">—</span></div>
+  <div class="brow"><span class="bl">地下室總面積</span><span class="bv-b" id="b-basm">—</span></div>
+  <div class="brow"><span class="bl">自設汽車位</span><span class="bv-b" id="b-cars">—</span></div>
+  <div class="brow"><span class="bl">總汽車位</span><span class="bv-b" id="b-cart">—</span></div>
+  <div class="brow" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px;"><span class="bl" style="font-weight:600;color:#333;">地上層樓地板面積（5項組成）</span><span class="bv-b" style="font-size:13px;" id="b-abvgnd">—</span></div>
+  <div class="brow"><span class="bl">　(1) 容積樓地板<span class="tag tg-t">容積</span></span><span class="bv-t" id="b-area1">—</span></div>
+  <div class="brow"><span class="bl">　(2) 免計容積 ×15%<span class="tag tg-t2">免計</span></span><span class="bv-t" id="b-area2">—</span></div>
+  <div class="brow"><span class="bl">　(3) 地上層梯廳 ×5/95<span class="tag tg-a">梯廳</span></span><span class="bv-a" id="b-area3">—</span></div>
+  <div class="brow"><span class="bl">　(4) 陽台 ×10%<span class="tag tg-a">陽台</span></span><span class="bv-a" id="b-area4">—</span></div>
+  <div class="brow"><span class="bl">　(5) 最大屋突（基地×建蔽×12.5%）<span class="tag tg-b">屋突</span></span><span class="bv-b" id="b-area5">—</span></div>
+  <div class="brow" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px;"><span class="bl" style="font-weight:600;color:#111;font-size:14px;">全棟總樓地板面積<span class="tag tg-p">地上＋地下</span></span><span class="bv-p" style="font-size:15px;" id="b-grand">—</span></div>
+  <div class="sbar" style="margin-top:12px;">
+    <div id="bar-legal" style="height:100%;background:#1D9E75;transition:width .4s;width:0%"></div>
+    <div id="bar-bonus" style="height:100%;background:#9FE1CB;transition:width .4s;width:0%"></div>
+    <div id="bar-xfer"  style="height:100%;background:#5DCAA5;transition:width .4s;width:0%"></div>
+    <div id="bar-bal"   style="height:100%;background:#EF9F27;transition:width .4s;width:0%"></div>
+    <div id="bar-com"   style="height:100%;background:#FAC775;transition:width .4s;width:0%"></div>
+    <div id="bar-base"  style="height:100%;background:#85B7EB;transition:width .4s;width:0%"></div>
+  </div>
+  <div class="leg">
+    <span><i style="background:#1D9E75;"></i>(1) 容積樓地板</span>
+    <span><i style="background:#9FE1CB;"></i>(2) 免計容積</span>
+    <span><i style="background:#5DCAA5;"></i>(3) 梯廳</span>
+    <span><i style="background:#EF9F27;"></i>(4) 陽台</span>
+    <span><i style="background:#FAC775;"></i>(5) 屋突</span>
+    <span><i style="background:#85B7EB;"></i>地下室</span>
+  </div>
+</div>
+<div class="bbox">
+  <p class="sec" style="margin-bottom:8px;">地價試算</p>
+  <div class="brow"><span class="bl">基地總公告現值</span><span class="bv" id="l-ann">—</span></div>
+  <div class="brow"><span class="bl">基地總公告地價</span><span class="bv" id="l-lp">—</span></div>
+  <div class="brow"><span class="bl">基地總市場地價（估）</span><span class="bv" id="l-mkt">—</span></div>
+</div>
+<p class="note">＊ 總容積=基地×法定容積率×(1+獎勵率+移轉率)。台北市高度：5×(W/2+D)，住一10.5m、住二21m；新北市：1.5(W+D)+6。地下室每汽車位12坪、機車位1.9坪含通道。1坪=3.30579m²</p>
+<div class="nav-btns">
+  <div></div>
+  <button class="btn-n" onclick="goStep(2)">下一步：總銷與成本 →</button>
+</div>
+</div><!-- end pg1 -->
+
+<!-- ═══════════════════════════════════════════════════════ STEP 2 -->
+<div class="pg" id="pg2">
+<div class="s1-summary" id="s2-summary">
+  <div class="s1-item"><div class="sl">基地面積</div><div class="sv" id="s2-aP">—</div></div>
+  <div class="s1-item"><div class="sl">總容積面積</div><div class="sv" id="s2-tP">—</div></div>
+  <div class="s1-item"><div class="sl">總銷坪</div><div class="sv" id="s2-sP">—</div></div>
+  <div class="s1-item"><div class="sl">最終樓層／總車位</div><div class="sv" id="s2-fl">—</div></div>
+</div>
+
+<p class="sec">全案共用參數</p>
+<div class="g4">
+  <div class="fd"><label>每坪售價</label><input type="number" id="s2-pprice" placeholder="例：100" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
+  <div class="fd"><label>每汽車位售價</label><input type="number" id="s2-cprice" placeholder="例：300" min="0" step="1"/><div class="un">萬元／位</div></div>
+  <div class="fd"><label>構造類別</label>
+    <select id="s2-struct">
+      <option value="RC">鋼筋混凝土（RC）</option>
+      <option value="SRC">鋼骨鋼筋混凝土（SRC）</option>
+      <option value="SS">鋼骨構造（SS）</option>
+    </select>
+  </div>
+  <div class="fd"><label>銷管費率</label><input type="number" id="s2-sr" value="5.5" min="0" max="20" step="0.1"/><div class="un">%（總銷售額，預設5.5%）</div></div>
+</div>
+<div class="g4" style="margin-top:10px;">
+  <div class="fd"><label>管銷費率</label><input type="number" id="s2-mr" value="5" min="0" max="20" step="0.1"/><div class="un">%（工程造價，預設5%）</div></div>
+  <div class="fd">
+    <div class="cb-row" style="margin-bottom:4px;">
+      <input type="checkbox" id="s2-vat-on" checked onchange="calcS2()"/>
+      <label for="s2-vat-on">營業稅（列入成本）</label>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <input type="number" id="s2-vat" value="5" min="0" max="20" step="0.1" style="font-size:13px;padding:7px 10px;border-radius:6px;border:1px solid #ddd;width:80px;"/>
+      <div class="un">%（建商分回銷售額）</div>
+    </div>
+  </div>
+  <div class="fd">
+    <div class="cb-row" style="margin-bottom:4px;">
+      <input type="checkbox" id="s2-proptax-on" checked onchange="calcS2()"/>
+      <label for="s2-proptax-on">物交稅（列入成本，5%固定）</label>
+    </div>
+  </div>
+  <div class="fd"><label>智慧建築費率</label><input type="number" id="s2-smart" value="6" min="6" max="8" step="0.5"/><div class="un">%（基地×法定容積×費率×公告現值×0.45，預設6%）</div></div>
+</div>
+<hr class="div"/>
+<p class="sec">基地面積比例分配（合計需等於100%）</p>
+<div class="g3">
+  <div class="fd"><label>自地自建比例</label><input type="number" id="s2-pself" value="0" min="0" max="100" step="1"/><div class="un">%</div></div>
+  <div class="fd"><label>都更合建比例</label><input type="number" id="s2-purb" value="100" min="0" max="100" step="1"/><div class="un">%</div></div>
+  <div class="fd"><label>委託興建比例</label><input type="number" id="s2-pcomm" value="0" min="0" max="100" step="1"/><div class="un">%</div></div>
+</div>
+<div id="pct-check" style="margin-top:6px;"></div>
+
+<hr class="div"/>
+<p class="sec">各模式獨立參數</p>
+
+<!-- Three mode columns -->
+<div class="mcols" id="mode-cols">
+
+<!-- 自地自建 -->
+<div class="mcol" id="mc-self" style="display:none;">
+  <div class="mcol-hd" style="color:#085041;">🏗 自地自建</div>
+  <!-- 核心參數 -->
+  <div style="background:#f0f9f5;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
+    <div class="fd" style="margin-bottom:8px;"><label>建造每坪造價</label><input type="number" id="sl-const" placeholder="例：8" min="0" step="0.1"/><div class="un">萬元／坪（全棟含地下室）</div></div>
+    <div class="fd"><label>購地單價</label><input type="number" id="sl-land" placeholder="例：30" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
+  </div>
+  <!-- 融資 -->
+  <div style="background:#f0f6ff;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
+    <div style="font-size:11px;font-weight:600;color:#378ADD;margin-bottom:8px;letter-spacing:.05em;">土地融資（基數：購地費用＋容移費用）</div>
+    <div class="g3" style="margin-bottom:6px;">
+      <div class="fd"><label>土融利率</label><input type="number" id="sl-sir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
+      <div class="fd"><label>土融可貸成數</label><input type="number" id="sl-sltv" value="70" min="0" max="100" step="5"/><div class="un">%（預設70%）</div></div>
+      <div class="fd"><label>土融期間</label><input type="number" id="sl-sp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:#378ADD;margin-bottom:8px;letter-spacing:.05em;">建築融資（基數：建造成本＋建築師費＋管理基金）</div>
+    <div class="g3">
+      <div class="fd"><label>建融利率</label><input type="number" id="sl-bir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
+      <div class="fd"><label>建融可貸成數</label><input type="number" id="sl-bltv" value="50" min="0" max="100" step="5"/><div class="un">%（預設50%）</div></div>
+      <div class="fd"><label>建融期間</label><input type="number" id="sl-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+    </div>
+  </div>
+  <!-- 購地相關費用 -->
+  <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:6px;letter-spacing:.05em;">購地費用</div>
+  <div class="fd" style="margin-bottom:6px;"><label>仲介費率</label><input type="number" id="sl-broker" value="1" min="0" max="10" step="0.1"/><div class="un">%（購地成本）</div></div>
+  <div class="fd" style="margin-bottom:6px;"><label>土增稅率</label><input type="number" id="sl-ltax" value="0" min="0" max="50" step="0.1"/><div class="un">%（購地成本）</div></div>
+  <div class="fd"><label>契稅率</label><input type="number" id="sl-dtax" value="0" min="0" max="10" step="0.1"/><div class="un">%（購地成本）</div></div>
+</div>
+
+<!-- 都更合建 -->
+<div class="mcol" id="mc-urb" style="display:none;">
+  <div class="mcol-hd" style="color:#0C447C;">🏘 都更合建</div>
+  <!-- 核心參數 -->
+  <div style="background:#EBF3FC;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
+    <div class="fd" style="margin-bottom:8px;"><label>建造每坪造價</label><input type="number" id="ub-const" placeholder="例：8" min="0" step="0.1"/><div class="un">萬元／坪（全棟含地下室）</div></div>
+  </div>
+  <!-- 合建比三參數 -->
+  <div style="background:#EBF3FC;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
+    <div style="font-size:11px;font-weight:600;color:#185FA5;margin-bottom:8px;letter-spacing:.05em;">合建比　地主各容積分配比例</div>
+    <div class="fd" style="margin-bottom:6px;">
+      <label>法定容積地主分配</label>
+      <input type="number" id="ub-p-legal" value="60" min="0" max="100" step="1"/>
+      <div class="un">%（預設60%）</div>
+    </div>
+    <div class="fd" style="margin-bottom:6px;" id="ub-p-bonus-wrap">
+      <label>獎勵容積地主分配</label>
+      <input type="number" id="ub-p-bonus" value="60" min="0" max="100" step="1"/>
+      <div class="un">%（預設60%，無獎勵容積時灰化）</div>
+    </div>
+    <div class="fd" style="margin-bottom:8px;" id="ub-p-tdr-wrap">
+      <label>容移容積地主分配</label>
+      <input type="number" id="ub-p-tdr" value="10" min="0" max="100" step="1"/>
+      <div class="un">%（預設10%，無容積移轉時灰化）</div>
+    </div>
+    <div style="background:#fff;border:1px solid #B5D4F4;border-radius:6px;padding:8px 10px;">
+      <div style="font-size:10.5px;color:#185FA5;font-weight:600;margin-bottom:4px;">推算合建比（建商分得）</div>
+      <div style="font-size:18px;font-weight:700;color:#0C447C;font-family:monospace;" id="ub-ratio-display">—</div>
+      <div style="font-size:10px;color:#888;margin-top:2px;" id="ub-ratio-detail">—</div>
+    </div>
+  </div>
+  <!-- 容積移轉參數 -->
+  <div style="background:#E8F4E8;border:1px solid #B8DDB8;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
+    <div style="font-size:11px;font-weight:600;color:#2E7D32;margin-bottom:8px;letter-spacing:.05em;">容積移轉費用參數</div>
+    <div class="fd" style="margin-bottom:6px;">
+      <label>移入基地公告現值降比</label>
+      <input type="number" id="ub-tdr-f1" value="0.25" min="0" max="1" step="0.01"/>
+      <div class="un">預設0.25（Item 1 係數）</div>
+    </div>
+    <div class="fd">
+      <label>估價降比</label>
+      <input type="number" id="ub-tdr-f2" value="0.85" min="0" max="1" step="0.01"/>
+      <div class="un">預設0.85（Item 2 售價折減係數，0.5固定）</div>
+    </div>
+  </div>
+  <!-- 融資 -->
+  <div style="background:#f0f6ff;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
+    <div style="font-size:11px;font-weight:600;color:#378ADD;margin-bottom:8px;letter-spacing:.05em;">土地融資（基數：容移費用）</div>
+    <div class="g3" style="margin-bottom:6px;">
+      <div class="fd"><label>土融利率</label><input type="number" id="ub-sir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
+      <div class="fd"><label>土融可貸成數</label><input type="number" id="ub-sltv" value="70" min="0" max="100" step="5"/><div class="un">%（預設70%）</div></div>
+      <div class="fd"><label>土融期間</label><input type="number" id="ub-sp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:#378ADD;margin-bottom:8px;letter-spacing:.05em;">建築融資（基數：建造成本＋建築師費＋管理基金）</div>
+    <div class="g3">
+      <div class="fd"><label>建融利率</label><input type="number" id="ub-bir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
+      <div class="fd"><label>建融可貸成數</label><input type="number" id="ub-bltv" value="50" min="0" max="100" step="5"/><div class="un">%（預設50%）</div></div>
+      <div class="fd"><label>建融期間</label><input type="number" id="ub-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+    </div>
+  </div>
+  <!-- 舊建物相關 -->
+  <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:6px;letter-spacing:.05em;">舊建物與拆遷</div>
+  <div class="fd" style="margin-bottom:6px;"><label>舊建物戶數</label><input type="number" id="ub-units" value="0" min="0" step="1"/><div class="un">戶</div></div>
+  <div class="fd" style="margin-bottom:6px;"><label>拆遷補償／戶</label><input type="number" id="ub-evict" value="5" min="0" step="0.5"/><div class="un">萬元／戶</div></div>
+  <div class="fd" style="margin-bottom:6px;"><label>舊建物總樓地板面積</label><input type="number" id="ub-oldfloor" value="0" min="0"/><div class="un">坪</div></div>
+  <div class="fd" style="margin-bottom:6px;"><label>月租補貼費率</label><input type="number" id="ub-rent" value="0.1" min="0" step="0.01"/><div class="un">萬元／坪／月（舊樓×0.9×費率×期間×12）</div></div>
+  <div class="fd" style="margin-bottom:10px;"><label>舊建物估價（地主ROE用）</label><input type="number" id="ub-oldprice" placeholder="例：70" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
+  <!-- 其他費用 -->
+  <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:6px;letter-spacing:.05em;">其他費用</div>
+  <div class="fd"><label>中人費</label><input type="number" id="ub-broker" value="0" min="0"/><div class="un">萬元</div></div>
+</div>
+
+<!-- 委託興建 -->
+<div class="mcol" id="mc-comm" style="display:none;">
+  <div class="mcol-hd" style="color:#3C3489;">📋 委託興建</div>
+  <!-- 核心參數 -->
+  <div style="background:#EEEDFE;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
+    <div class="fd"><label>建造每坪造價</label><input type="number" id="cm-const" placeholder="例：8" min="0" step="0.1"/><div class="un">萬元／坪（全棟含地下室）</div></div>
+  </div>
+  <!-- 融資 -->
+  <div style="background:#f0f6ff;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
+    <div style="font-size:11px;font-weight:600;color:#378ADD;margin-bottom:8px;letter-spacing:.05em;">建築融資（基數：建造成本＋建築師費＋管理基金）</div>
+    <div class="g3">
+      <div class="fd"><label>建融利率</label><input type="number" id="cm-bir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
+      <div class="fd"><label>建融可貸成數</label><input type="number" id="cm-bltv" value="50" min="0" max="100" step="5"/><div class="un">%（預設50%）</div></div>
+      <div class="fd"><label>建融期間</label><input type="number" id="cm-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+    </div>
+  </div>
+  <!-- 委託與舊建物 -->
+  <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:6px;letter-spacing:.05em;">委託條件</div>
+  <div class="fd" style="margin-bottom:6px;"><label>委託費率</label><input type="number" id="cm-rate" value="10" min="1" max="30" step="0.5"/><div class="un">%（地主總銷售額，預設10%）</div></div>
+  <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:6px;margin-top:10px;letter-spacing:.05em;">舊建物（委建戶ROE用）</div>
+  <div class="fd" style="margin-bottom:6px;"><label>舊建物估價</label><input type="number" id="cm-oldprice" placeholder="例：70" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
+  <div class="fd"><label>舊建物面積</label><input type="number" id="cm-oldfloor" value="0" min="0"/><div class="un">坪</div></div>
+</div>
+
+</div><!-- end mode-cols -->
+
+<hr class="div"/>
+<p class="sec">試算結果</p>
+
+<!-- Summary cards -->
+<div class="g4" style="margin-bottom:12px;" id="s2-summary-cards">
+  <div class="hi teal"><p class="ml">整案總銷售額</p><p class="mv" id="s2-total-rev">—</p><p class="ms">萬元</p></div>
+  <div class="hi amber"><p class="ml">建商整案成本</p><p class="mv" id="s2-total-cost">—</p><p class="ms">萬元</p></div>
+  <div class="hi blue"><p class="ml">建商整案毛利</p><p class="mv" id="s2-total-profit">—</p><p class="ms">萬元</p></div>
+  <div class="hi green2"><p class="ml">建商整案 ROE</p><p class="mv" id="s2-total-roe">—</p><p class="ms">毛利÷自有資金</p></div>
+  <div class="hi purple"><p class="ml">建商整案 ROA</p><p class="mv" id="s2-total-roa">—</p><p class="ms">毛利÷總成本</p></div>
+</div>
+
+<!-- Mode result table -->
+<div class="bbox">
+<p class="sec" style="margin-bottom:10px;">各模式成本明細對比（萬元）</p>
+<div style="overflow-x:auto;">
+<table class="rtbl" id="s2-tbl">
+  <thead>
+    <tr>
+      <th>成本項目</th>
+      <th id="th-self" style="display:none;">自地自建</th>
+      <th id="th-urb" style="display:none;">都更合建（建商）</th>
+      <th id="th-comm" style="display:none;">委託興建（建商）</th>
+    </tr>
+  </thead>
+  <tbody id="s2-tbody"></tbody>
+</table>
+</div>
+</div>
+
+<!-- Owner result boxes -->
+<div id="s2-owner-boxes"></div>
+
+<p class="note" id="s2-note"></p>
+
+<div class="nav-btns">
+  <button class="btn-p" onclick="goStep(1)">← 上一步</button>
+  <button class="btn-n" onclick="goStep(3)">下一步：分回計算 →</button>
+</div>
+</div><!-- end pg2 -->
+
+<!-- ═══════════════════════════════════════════════════════ STEP 3 -->
+<div class="pg" id="pg3">
+<div class="s1-summary" id="s3-summary">
+  <div class="s1-item"><div class="sl">總銷坪</div><div class="sv" id="s3-sp">—</div></div>
+  <div class="s1-item"><div class="sl">總汽車位</div><div class="sv" id="s3-car">—</div></div>
+  <div class="s1-item"><div class="sl">整案總銷售額</div><div class="sv" id="s3-rev">—</div></div>
+  <div class="s1-item"><div class="sl">建商ROE</div><div class="sv" id="s3-roe">—</div></div>
+  <div class="s1-item"><div class="sl">建商ROA</div><div class="sv" id="s3-roa">—</div></div>
+</div>
+
+<p class="sec">分回計算結果</p>
+<div id="s3-content">
+  <div class="al al-i">請先完成步驟二的輸入，再查看分回計算。</div>
+</div>
+
+<!-- Blended builder ROE -->
+<div class="ret-party" style="margin-bottom:12px;" id="s3-blend-box">
+  <div class="ret-party-hd hd-blend">
+    <span>建商整案綜合 ROE / ROA</span>
+    <span style="font-size:16px;font-weight:700;">ROE <span id="s3-blend-roe">—</span>　ROA <span id="s3-blend-roa">—</span></span>
+  </div>
+  <div class="ret-party-bd">
+    <div class="brow"><span class="bl">整案建商毛利（含各模式加總）</span><span class="bv-g" id="s3-blend-profit">—</span></div>
+    <div class="brow"><span class="bl">整案建商自有資金</span><span class="bv" id="s3-blend-equity">—</span></div>
+    <div class="brow"><span class="bl">整案建商總成本</span><span class="bv" id="s3-blend-cost">—</span></div>
+    <div class="brow"><span class="bl">自地自建貢獻</span><span class="bv" id="s3-self-profit">—</span></div>
+    <div class="brow"><span class="bl">都更合建貢獻</span><span class="bv" id="s3-urb-profit">—</span></div>
+    <div class="brow"><span class="bl">委託興建委託費</span><span class="bv" id="s3-comm-fee">—</span></div>
+  </div>
+</div>
+
+<div class="nav-btns">
+  <button class="btn-p" onclick="goStep(2)">← 上一步</button>
+  <div></div>
+</div>
+</div><!-- end pg3 -->
+<!-- ═══════════════════════════════════════════════════════ STEP 4 -->
+<div class="pg" id="pg4">
+<div class="s1-summary" id="s4-summary">
+  <div class="s1-item"><div class="sl">地主總分回銷坪</div><div class="sv" id="s4-ownerSP">—</div></div>
+  <div class="s1-item"><div class="sl">地主總分回車位</div><div class="sv" id="s4-ownerCar">—</div></div>
+  <div class="s1-item"><div class="sl">全基地坪數</div><div class="sv" id="s4-basePing">—</div></div>
+  <div class="s1-item"><div class="sl">坪價 / 車位價</div><div class="sv" id="s4-prices">—</div></div>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+  <p class="sec" style="margin:0;">地主列表</p>
+  <button class="btn-n" onclick="addOwner()" style="padding:6px 16px;font-size:12px;">＋ 新增地主</button>
+</div>
+
+<div id="s4-list"></div>
+
+<!-- Totals -->
+<div class="bbox" id="s4-totals" style="display:none;">
+  <p class="sec" style="margin-bottom:10px;">加總核對</p>
+  <div class="brow"><span class="bl">各地主土地坪數加總</span><span class="bv" id="s4-tot-land">—</span></div>
+  <div class="brow"><span class="bl">全基地坪數</span><span class="bv" id="s4-tot-base">—</span></div>
+  <div class="brow"><span class="bl">各地主分回銷坪加總（含加權）</span><span class="bv" id="s4-tot-sale">—</span></div>
+  <div class="brow"><span class="bl">地主總分回銷坪（Step3）</span><span class="bv" id="s4-tot-sale-ref">—</span></div>
+  <div class="brow"><span class="bl">各地主租金補貼加總</span><span class="bv" id="s4-tot-rent">—</span></div>
+</div>
+
+<div class="nav-btns">
+  <button class="btn-p" onclick="goStep(3)">← 上一步</button>
+  <div></div>
+</div>
+</div><!-- end pg4 -->
+</div><!-- end app -->
+
+<script>
+const P2M=3.30579,M2P=1/P2M,WAN=10000;
+const fmt=(v,d=2)=>isNaN(v)||v==null?'—':v.toLocaleString('zh-TW',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtW=(yuan,d=1)=>isNaN(yuan)||yuan==null?'—':fmt(yuan/WAN,d)+'萬';
+const fmtI=v=>isNaN(v)||v==null?'—':Math.round(v).toLocaleString('zh-TW');
+const ping=m2=>fmt(m2*M2P)+'坪';
+const m2s=m2=>fmt(m2)+'m²';
+const s=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+const pw=(id,w)=>{const e=document.getElementById(id);if(e)e.style.width=Math.max(0,Math.min(100,w||0))+'%';};
+const gv=id=>{const e=document.getElementById(id);return e?e.value:'';};
+const gf=id=>parseFloat(document.getElementById(id)?.value)||0;
+
+// Shared state
+const ST={
+  aM2:0,aPing:0,totalM2:0,totalPing:0,salePing:0,saleM2:0,
+  grandM2:0,grandPing:0,totalCar:0,legalMoto:0,finalFloors:0,
+  city:'taipei',zone:'',bFloors:0,b1M2:0,
+  s2:null // Step 2 results
+};
+
+// ══════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════════
+function goStep(n){
+  [1,2,3,4].forEach(i=>{
+    document.getElementById('pg'+i).classList.toggle('active',i===n);
+    document.getElementById('n'+i).classList.toggle('active',i===n);
+  });
+  if(n===2){updateS2Summary();calcS2();}
+  if(n===3){updateS3Summary();renderS3();}
+  if(n===4){updateS4Summary();calcS4();}
+}
+
+// ══════════════════════════════════════════════════════════════════
+// STEP 1 DATA
+// ══════════════════════════════════════════════════════════════════
+const ZONE_PRE={'住一':[80,60],'住二':[160,45],'住三':[225,45],'住四':[300,50],'商業':[560,80],'工業':[200,55]};
+const ZONE_ABS={'住一':10.5,'住二':21};
+const CAR_LAW={
+  taipei:{txt:'汽車：每滿<strong>150m²</strong>一位，每戶至少一位',calc:(m2,u)=>Math.max(Math.ceil(m2/150),u||0)},
+  newtaipei:{txt:'汽車：≤500m²免設；501–3000m²每<strong>150m²</strong>；>3000m²每<strong>200m²</strong>',
+    calc:(m2,u)=>{let f=0;if(m2>500&&m2<=3000)f=Math.ceil((m2-500)/150);else if(m2>3000)f=Math.ceil(2500/150)+Math.ceil((m2-3000)/200);return Math.max(f,0);}},
+  other:{txt:'汽車：每滿<strong>150m²</strong>一位',calc:(m2,u)=>Math.ceil(m2/150)}
+};
+const MOTO_LAW={
+  taipei:{txt:'機車：每滿<strong>100m²</strong>一位，每戶至少一位',calc:(m2,u)=>Math.max(Math.ceil(m2/100),u||0)},
+  newtaipei:{txt:'機車：每滿<strong>150m²</strong>一位，每戶至少一位',calc:(m2,u)=>Math.max(Math.ceil(m2/150),u||0)},
+  other:{txt:'機車：每滿<strong>150m²</strong>一位',calc:(m2,u)=>Math.ceil(m2/150)}
+};
+
+let lastKP='K';
+function syncKP(src){
+  const Ki=document.getElementById('f-K'),Pi=document.getElementById('f-P'),Bi=document.getElementById('f-B');
+  const B=(parseFloat(Bi.value)||5)/100;
+  if(src==='K'||(src==='B'&&lastKP==='K')){lastKP='K';
+    const K=parseFloat(Ki.value);
+    if(!isNaN(K)&&K>1+B){Pi.value=Math.max(0,((K-1-B)/K)*100).toFixed(2);Pi.classList.add('auto');Ki.classList.remove('auto');s('P-hint','↑ 由K與B推算');s('K-hint','');}
+  }else if(src==='P'||(src==='B'&&lastKP==='P')){lastKP='P';
+    const Pv=parseFloat(Pi.value);
+    if(!isNaN(Pv)&&Pv>=0&&Pv<100){Ki.value=((1+B)/(1-Pv/100)).toFixed(4);Ki.classList.add('auto');Pi.classList.remove('auto');s('K-hint','↑ 由P與B推算');s('P-hint','');}
+  }
+  const Bpct=parseFloat(Bi.value)||0;
+  const bh=document.getElementById('B-hint');
+  if(Bpct>15){Bi.classList.add('warn');s('B-hint','⚠ 超過法規上限15%');bh.className='hn hr';}
+  else{Bi.classList.remove('warn');s('B-hint',Bpct>0?fmt(Bpct,1)+'% ≤ 15%':'');bh.className='hn ht';}
+  calcS1();
+}
+
+function getH(city,zone,W,D){
+  if(isNaN(W))return null;
+  let H;
+  if(city==='taipei'){H=5*(W/2+D);const a=ZONE_ABS[zone];if(a)H=Math.min(H,a);}
+  else if(city==='newtaipei'){H=1.5*(W+D)+6;}
+  else{H=1.5*(W+D);}
+  return H>0?H:null;
+}
+function hToFloors(H,h1,hs){if(!H||H<=0)return null;return H<=h1?1:1+Math.floor((H-h1)/hs);}
+
+function calcS1(){
+  const unit=gv('f-unit'),areaRaw=gf('f-area'),far=gf('f-far')/100,bcr=gf('f-bcr')/100;
+  const bonR=gf('f-bonus')/100,xfrR=gf('f-transfer')/100;
+  const Kv=parseFloat(document.getElementById('f-K').value),Bv=gf('f-B'),Pv=parseFloat(document.getElementById('f-P').value);
+  const units=parseInt(document.getElementById('f-units').value)||0;
+  const carSzP=gf('f-parksize')||12,motoSzP=gf('f-motosize')||1.9,excav=gf('f-excavate')/100||0.7;
+  const W=parseFloat(document.getElementById('f-W').value),D=gf('f-D'),h1=gf('f-h1')||4,hs=gf('f-hs')||3.2;
+  const city=gv('f-city'),zone=gv('f-zone');
+  const ann=gf('f-ann'),lp=gf('f-lp'),mkt=gf('f-mkt');
+
+  const aM2=unit==='ping'?areaRaw*P2M:areaRaw;
+  if(aM2<=0||far<=0){clearS1();return;}
+
+  const legalM2=aM2*far,bonM2=aM2*far*bonR,xfrM2=aM2*far*xfrR,totalM2=legalM2+bonM2+xfrM2;
+  const maxBM2=aM2*bcr;
+  const K=isNaN(Kv)?null:Kv,B=isNaN(Bv)?0.05:Bv/100,P=isNaN(Pv)?null:Pv/100;
+  const saleM2=K?totalM2*K:null,balM2=totalM2*B,comM2=P&&saleM2?saleM2*P:null;
+
+  const legalCar=CAR_LAW[city].calc(totalM2,units),legalMoto=MOTO_LAW[city].calc(totalM2,units);
+  const carSzM2=carSzP*P2M,motoSzM2=motoSzP*P2M;
+  const b1M2=aM2*excav,b1P=b1M2*M2P;
+  const legalNeedP=legalCar*carSzP+legalMoto*motoSzP,legalNeedM2=legalCar*carSzM2+legalMoto*motoSzM2;
+  const bFloors=b1P>0?Math.ceil(legalNeedP/b1P):0;
+  const baseM2=bFloors*b1M2,baseP=baseM2*M2P;
+  const remainP=baseP-legalNeedP;
+  const selfCar=Math.max(0,Math.floor(remainP/carSzP)),totalCar=legalCar+selfCar,totalMoto=legalMoto;
+
+  // 樓層：以地上層面積/（基地×建蔽）為基，取ceil，再受高度限制
+  // NOTE: aboveGroundM2 computed below; need to forward-compute for floor calc
+  const _a1=totalM2,_a2=_a1*0.15,_a3=(_a1+_a2)*5/95,_a4=(_a1+_a2+_a3)*0.10,_a5=aM2*bcr*0.125;
+  const _abvGnd=_a1+_a2+_a3+_a4+_a5;
+  const farFloat=maxBM2>0?_abvGnd/maxBM2:null,farInt=farFloat?Math.ceil(farFloat):null;
+  const Hlimit=!isNaN(W)?getH(city,zone,W,D):null;
+  const Hformula=!isNaN(W)?(city==='taipei'?5*(W/2+D):city==='newtaipei'?1.5*(W+D)+6:1.5*(W+D)):null;
+  const hFloors=Hlimit?hToFloors(Hlimit,h1,hs):null;
+  let finalFloors=farInt,hLimited=false;
+  if(hFloors&&farInt&&hFloors<farInt){finalFloors=hFloors;hLimited=true;}
+  else if(hFloors&&!farInt)finalFloors=hFloors;
+  const unusedM2=hLimited&&finalFloors&&maxBM2?totalM2-finalFloors*maxBM2:null;
+
+  // 地上層樓地板面積（5項組成）
+  const area1=totalM2;                                  // (1) 容積樓地板
+  const area2=totalM2*0.15;                             // (2) 免計容積
+  const area3=(area1+area2)*5/95;                       // (3) 地上層梯廳
+  const area4=(area1+area2+area3)*0.10;                 // (4) 陽台
+  const area5=aM2*bcr*0.125;                            // (5) 最大屋突
+  const aboveGroundM2=area1+area2+area3+area4+area5;    // 地上層面積
+  const grandM2=aboveGroundM2+baseM2;                   // 全棟總樓地板
+  const exemptM2=area2,nonParkM2=baseM2-legalNeedM2;
+
+  // Update state
+  ST.aM2=aM2;ST.aPing=aM2*M2P;ST.totalM2=totalM2;ST.totalPing=totalM2*M2P;
+  ST.saleM2=saleM2||0;ST.salePing=(saleM2||0)*M2P;
+  ST.grandM2=grandM2;ST.grandPing=grandM2*M2P;
+  ST.aboveGroundM2=aboveGroundM2;
+  ST.totalCar=totalCar;ST.legalMoto=totalMoto;ST.finalFloors=finalFloors||0;
+  ST.city=city;ST.zone=zone;ST.bFloors=bFloors;ST.b1M2=b1M2;
+  ST.far=far;ST.xfrR=xfrR;ST.bonR=bonR;ST.K=(saleM2&&totalM2)?saleM2/totalM2:0;
+  ST.P=P||0; // 公設比
+  // 現有建物面積同步
+  const existRaw=gf('f-exist');
+  const existPing=unit==='ping'?existRaw:existRaw*M2P;
+  ST.existPing=existPing;
+  const ubOld=document.getElementById('ub-oldfloor');
+  if(ubOld&&existPing>0)ubOld.value=fmt(existPing,2);
+
+  // Display
+  s('r-total',ping(totalM2));s('r-total-s',m2s(totalM2));
+  s('r-gross',saleM2?ping(saleM2):'—');s('r-gross-s',saleM2?m2s(saleM2):'');
+  const saleFAR=saleM2&&aM2>0?saleM2/aM2*M2P:null; // 總銷坪/基地坪
+  s('r-salefar',saleFAR?'銷售容積率 '+fmt(saleFAR,2)+'（每坪土地創造 '+fmt(saleFAR,2)+' 銷售坪）':'');
+  s('r-base',ping(baseM2));s('r-base-s',bFloors+'層　'+m2s(baseM2));
+  s('r-grand',ping(grandM2));s('r-grand-s',`地上${ping(aboveGroundM2)} + 地下${ping(baseM2)}`);
+  s('r-floors',finalFloors?finalFloors+'F':'—');s('r-floors-s',hLimited?'⚠ 高度為限制因素':'容積為限制因素');
+  s('r-hfloors',hFloors?hFloors+'F':'—');s('r-hfloors-s',Hlimit?`H=${fmt(Hlimit,1)}m → ${hFloors}F`:'未輸入道路寬度');
+  s('r-car',totalCar+'位');s('r-car-s',`法定${legalCar}＋自設${selfCar}`);
+  s('r-moto',totalMoto+'位');s('r-moto-s',`法定（容積+戶數取大）`);
+  s('b-area',m2s(aM2)+' ('+ping(aM2)+')');
+  s('b-legal',ping(legalM2)+' ('+m2s(legalM2)+')');
+  s('b-bonus',bonM2>0?'+'+ping(bonM2)+' ('+m2s(bonM2)+')':'0');
+  s('b-xfer',xfrM2>0?'+'+ping(xfrM2)+' ('+m2s(xfrM2)+')':'0');
+  s('b-total',ping(totalM2)+' ('+m2s(totalM2)+')');
+  s('b-Kv',K?fmt(K,3):'—');s('b-Bv',fmt(B*100,1));s('b-Pv',P?fmt(P*100,1):'—');
+  s('b-Ks',K?'× '+fmt(K,3):'— (未輸入)');
+  s('b-main',ping(totalM2)+' ('+m2s(totalM2)+')');
+  s('b-bal','+'+ping(balM2)+' ('+m2s(balM2)+')');
+  s('b-com',comM2?'+'+ping(comM2)+' ('+m2s(comM2)+')':'— (未輸入K/P)');
+  s('b-gross',saleM2?ping(saleM2)+' ('+m2s(saleM2)+')':'—');
+  s('b-maxb',ping(maxBM2)+' ('+m2s(maxBM2)+')');
+  s('b-ffl',farFloat?fmt(farFloat,2)+'F':'—');
+  const ct=document.getElementById('b-ctag');if(ct)ct.textContent=city==='taipei'?'台北市':city==='newtaipei'?'新北市':'其他';
+  if(!isNaN(W)){
+    const zA=city==='taipei'&&zone&&ZONE_ABS[zone]?ZONE_ABS[zone]:null;
+    s('b-Hf',Hformula?fmt(Hformula,1)+'m':'—');
+    s('b-Hab',zA?zA+'m（'+zone+'）':'無統一限制');
+    s('b-Hlim',Hlimit?fmt(Hlimit,1)+'m':'—');
+    s('b-Hfl',hFloors?hFloors+'F':'—');
+  }else{['b-Hf','b-Hab','b-Hlim','b-Hfl'].forEach(id=>s(id,'—'));}
+  s('b-ffl2',finalFloors?finalFloors+'F'+(hLimited?' (⚠ 高度限制)':''):'—');
+  s('b-b1',ping(b1M2)+' ('+m2s(b1M2)+')');
+  s('b-carl',legalCar+'位');s('b-motol',legalMoto+'位');
+  s('b-pneed',fmt(legalNeedP)+'坪 ('+m2s(legalNeedM2)+')');
+  s('b-bfl',bFloors+'層');
+  s('b-basm',ping(baseM2)+' ('+m2s(baseM2)+') = '+bFloors+'層 × '+ping(b1M2));
+  s('b-cars',selfCar+'位');s('b-cart',totalCar+'位（法定'+legalCar+'＋自設'+selfCar+'）');
+  // 地上層面積拆解顯示
+  s('b-area1',ping(area1)+' ('+m2s(area1)+')');
+  s('b-area2','+'+ping(area2)+' ('+m2s(area2)+')');
+  s('b-area3','+'+ping(area3)+' ('+m2s(area3)+')');
+  s('b-area4','+'+ping(area4)+' ('+m2s(area4)+')');
+  s('b-area5','+'+ping(area5)+' ('+m2s(area5)+')');
+  s('b-abvgnd',ping(aboveGroundM2)+' ('+m2s(aboveGroundM2)+')');
+  s('b-grand',ping(grandM2)+' ('+m2s(grandM2)+')');
+  // Bar chart: area1~area5 + base
+  pw('bar-legal',area1/grandM2*100);
+  pw('bar-bonus',area2/grandM2*100);
+  pw('bar-xfer', area3/grandM2*100);
+  pw('bar-bal',  area4/grandM2*100);
+  pw('bar-com',  area5/grandM2*100);
+  pw('bar-base', baseM2/grandM2*100);
+  const alerts=[];
+  if(B*100>15)alerts.push({c:'al-w',m:`⚠ 陽台比例${fmt(B*100,1)}%超過法規上限15%，超出部分須計入容積。`});
+  if(hLimited&&unusedM2>0)alerts.push({c:'al-w',m:`⚠ 高度為限制因素：採用${finalFloors}F，剩餘未用容積約${ping(unusedM2)}。`});
+  if(nonParkM2>=0){
+    if(nonParkM2<=exemptM2)alerts.push({c:'al-o',m:`✓ 地下室非停車面積約${ping(nonParkM2)}，在15%免計容積額度（${ping(exemptM2)}）內。`});
+    else alerts.push({c:'al-i',m:`ℹ 地下室非停車面積約${ping(nonParkM2)}，超過15%免計額度（${ping(exemptM2)}），建議確認規劃。`});
+  }
+  document.getElementById('s1-alerts').innerHTML=alerts.map(a=>`<div class="al ${a.c}" style="margin-bottom:8px;">${a.m}</div>`).join('');
+  if(ann>0)s('l-ann','$'+fmtI(ann*aM2)+'元');
+  if(lp>0)s('l-lp','$'+fmtI(lp*aM2)+'元');
+  if(mkt>0)s('l-mkt','$'+fmtI(mkt*aM2)+'元');
+  updateUI1();
+}
+
+function clearS1(){
+  ST.aM2=0;ST.salePing=0;ST.grandM2=0;ST.totalCar=0;ST.finalFloors=0;
+  ['r-total','r-total-s','r-gross','r-gross-s','r-base','r-base-s','r-grand','r-grand-s','r-floors','r-floors-s','r-hfloors','r-hfloors-s','r-car','r-car-s','r-moto','r-moto-s'].forEach(id=>s(id,'—'));
+  ['bar-legal','bar-bonus','bar-xfer','bar-bal','bar-com','bar-base'].forEach(id=>pw(id,0));
+}
+function updateUI1(){
+  const city=gv('f-city'),zone=gv('f-zone');
+  const lb=document.getElementById('law-box');
+  if(lb)lb.innerHTML=`${CAR_LAW[city].txt}　｜　${MOTO_LAW[city].txt}`;
+  const hb=document.getElementById('hfb');
+  if(hb){
+    const abs=city==='taipei'&&zone&&ZONE_ABS[zone]?`，${zone}絕對限高<strong>${ZONE_ABS[zone]}m</strong>`:'';
+    if(city==='taipei')hb.innerHTML=`<code>台北市</code> H = 5 × (W/2 + D)${abs}`;
+    else if(city==='newtaipei')hb.innerHTML=`<code>新北市</code> H = 1.5 × (W + D) + 6`;
+    else hb.innerHTML=`<code>其他</code> H = 1.5 × (W + D)`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// STEP 2: LEGAL COST TABLES
+// ══════════════════════════════════════════════════════════════════
+const LEGAL_COST={
+  taipei:{
+    RC:[[5,9660],[8,12550],[12,14440],[15,17320],[20,18180],[25,19120],[30,20070],[999,21050]],
+    SRC:[[10,17900],[15,18810],[20,19730],[25,20630],[30,21550],[999,22460]],
+    SS:[[10,21950],[15,23050],[20,24140],[25,25230],[30,26340],[999,27410]]
+  },
+  newtaipei:{
+    RC:[[5,8180],[12,9460],[20,12290],[30,14240],[999,15310]],
+    SRC:[[10,17160],[20,18410],[30,20910],[999,21920]],
+    SS:[[10,21500],[20,22750],[30,25220],[999,26240]]
+  }
+};
+function getLegalRate(city,struct,floors){
+  const tbl=(LEGAL_COST[city]||LEGAL_COST.newtaipei)[struct]||LEGAL_COST.newtaipei.RC;
+  for(const[f,r]of tbl)if(floors<=f)return r;
+  return tbl[tbl.length-1][1];
+}
+// Progressive architect fee (input/output in 萬元)
+function archFeeWan(wan){
+  if(wan<=300)return wan*0.08;
+  let f=300*0.08;
+  if(wan<=1500)return f+(wan-300)*0.075;
+  f+=1200*0.075;
+  if(wan<=6000)return f+(wan-1500)*0.0725;
+  f+=4500*0.0725;
+  return f+(wan-6000)*0.07;
+}
+// Progressive management fund (input/output in 萬元)
+function mgmtFundWan(wan){
+  if(wan<=1000)return wan*0.02;
+  let f=1000*0.02;
+  if(wan<=10000)return f+(wan-1000)*0.015;
+  f+=9000*0.015;
+  if(wan<=100000)return f+(wan-10000)*0.005;
+  f+=90000*0.005;
+  return f+(wan-100000)*0.003;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// STEP 2: PROPORTION VALIDATION
+// ══════════════════════════════════════════════════════════════════
+function checkPct(){
+  const ps=gf('s2-pself'),pu=gf('s2-purb'),pc=gf('s2-pcomm'),tot=ps+pu+pc;
+  const el=document.getElementById('pct-check');
+  if(el){if(Math.abs(tot-100)<0.1)el.innerHTML='<span class="sum-ok">✓ 合計 100%</span>';
+    else el.innerHTML=`<span class="sum-err">⚠ 合計 ${fmt(tot,1)}%，需等於100%</span>`;}
+  // Show/hide mode columns
+  document.getElementById('mc-self').style.display=ps>0?'block':'none';
+  document.getElementById('mc-urb').style.display=pu>0?'block':'none';
+  document.getElementById('mc-comm').style.display=pc>0?'block':'none';
+  // Adjust grid
+  const n=[ps>0,pu>0,pc>0].filter(Boolean).length;
+  const mc=document.getElementById('mode-cols');
+  if(mc)mc.style.gridTemplateColumns=n===1?'1fr':n===2?'1fr 1fr':'repeat(3,1fr)';
+  return Math.abs(tot-100)<0.1;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// STEP 2: MAIN CALCULATION
+// ══════════════════════════════════════════════════════════════════
+function calcS2(){
+  if(!checkPct())return;
+  const pSelf=gf('s2-pself')/100,pUrb=gf('s2-purb')/100,pComm=gf('s2-pcomm')/100;
+  if(pSelf+pUrb+pComm<0.99)return;
+
+  const pPing=gf('s2-pprice'); // 萬/坪
+  const pCar=gf('s2-cprice'); // 萬/位
+  const struct=gv('s2-struct');
+  const salesR=gf('s2-sr')/100,mgmtR=gf('s2-mr')/100;
+  const vatR=gf('s2-vat')/100;
+  const vatOn=document.getElementById('s2-vat-on')?.checked!==false;
+  const propTaxOn=document.getElementById('s2-proptax-on')?.checked!==false;
+
+  const {aM2,aPing,totalM2,totalPing,salePing,grandM2,grandPing,totalCar,finalFloors,city,far,xfrR,K}=ST;
+  const annPrice=gf("f-ann"); // 元/m²（公告現值）
+  const pPingYuan=pPing*WAN; // 元/坪
+  const smartR=gf("s2-smart")/100||0.06;
+  const tdrF1=parseFloat(document.getElementById('ub-tdr-f1')?.value)||0.25; // 移入基地公告現值降比
+  const tdrF2=parseFloat(document.getElementById('ub-tdr-f2')?.value)||0.5;  // 估價降比
+  if(aM2<=0)return;
+
+  const legalRate=getLegalRate(city,struct,finalFloors);
+  const res={};
+
+  function computeCommon(p){
+    const aP=aPing*p,aM=aM2*p;
+    const gP=grandPing*p,gM=grandM2*p;
+    const sP=salePing*p;
+    const car=Math.round(totalCar*p);
+    const legalCostWan=legalRate*gM/WAN;
+    const archW=archFeeWan(legalCostWan),fundW=mgmtFundWan(legalCostWan);
+    const archY=archW*WAN,fundY=fundW*WAN;
+    return{aP,aM,gP,gM,sP,car,legalCostWan,archY,fundY};
+  }
+  // 容積移轉費用計算 (constPerPing: 元/坪)
+  function calcTDR(c,constPerPing){
+    if(!xfrR||xfrR<=0)return{tdr1:0,tdr2:0,tdrTotal:0};
+    const tdr1=c.aM*xfrR*0.5*annPrice*tdrF1;
+    const tdr2=(pPingYuan*tdrF2-constPerPing)*c.aP*far*xfrR*K*0.5;
+    const tdrTotal=Math.max(0,tdr1)+Math.max(0,tdr2);
+    return{tdr1:Math.max(0,tdr1),tdr2:Math.max(0,tdr2),tdrTotal};
+  }
+  // 三項新稅費
+  function calcNewTaxes(c, builderSalesRev, legalCostWan, fundY){
+    const propTax = builderSalesRev * 0.05;                  // 物交稅 5%
+    const greenMaint = fundY * 0.5;                           // 綠建築維護費 = 管理基金×0.5
+    const greenDeposit = legalCostWan * WAN * 0.05;           // 綠建築保證金 = 法定造價×5%
+    const greenTotal = greenMaint + greenDeposit;
+    const smartDeposit = c.aM * far * smartR * annPrice * 0.45; // 智慧建築保證金
+    return{propTax, greenMaint, greenDeposit, greenTotal, smartDeposit};
+  }
+
+  // ── 自地自建 ──
+  if(pSelf>0){
+    const c=computeCommon(pSelf);
+    const landPerPing=gf('sl-land')*WAN;        // 萬/坪→元/坪
+    const constPerPing=gf('sl-const')*WAN;      // 萬/坪→元/坪
+    const brokerR2=gf('sl-broker')/100,ltaxR=gf('sl-ltax')/100,dtaxR=gf('sl-dtax')/100;
+    const soilIR=gf('sl-sir')/100||0.035,buildIR=gf('sl-bir')/100||0.035;
+    const soilLTV=gf('sl-sltv')/100||0.7,buildLTV=gf('sl-bltv')/100||0.5;
+    const soilPeriod=gf('sl-sp'),buildPeriod=gf('sl-bp');
+
+    const landCost=landPerPing*c.aP;             // 元
+    const brokerFee=landCost*brokerR2;
+    const landTax=landCost*ltaxR,deedTax=landCost*dtaxR;
+    const constCost=constPerPing*c.gP;
+    const consultFee=c.aP*WAN;                  // 都更顧問費 坪×1萬
+    const salesRev=(c.sP*pPing+c.car*pCar)*WAN;
+    const salesCost=salesRev*salesR;
+    const mgmtCost=constCost*mgmtR;
+    const {tdr1:sl_tdr1,tdr2:sl_tdr2,tdrTotal:tdrCost}=calcTDR(c,constPerPing);
+
+    // 土融：購地費用＋容移費用
+    const soilBase=landCost+brokerFee+landTax+deedTax+tdrCost;
+    const soilLoan=soilBase*soilLTV,soilInt=soilLoan*soilIR*soilPeriod;
+    // 建融：建造成本＋建築師費＋管理基金
+    const buildBase=constCost+c.archY+c.fundY;
+    const buildLoan=buildBase*buildLTV,buildInt=buildLoan*buildIR*buildPeriod*0.5;
+
+    const {propTax:_sl_propTax,greenMaint:sl_greenMaint,greenDeposit:sl_greenDeposit,greenTotal:sl_greenTotal,smartDeposit:sl_smartDeposit}=calcNewTaxes(c,salesRev,c.legalCostWan,c.fundY);
+    const sl_propTax=propTaxOn?_sl_propTax:0;
+    const totalCost=landCost+brokerFee+landTax+deedTax+constCost+c.archY+c.fundY+salesCost+mgmtCost+consultFee+tdrCost+soilInt+buildInt+sl_propTax+sl_greenTotal+sl_smartDeposit;
+    const netProfit=salesRev-totalCost;
+    const equity=totalCost-soilLoan-buildLoan;
+    res.self={...c,landCost,brokerFee,landTax,deedTax,constCost,consultFee,tdrCost,sl_tdr1,sl_tdr2,salesRev,salesCost,mgmtCost,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,propTax:sl_propTax,greenMaint:sl_greenMaint,greenDeposit:sl_greenDeposit,greenTotal:sl_greenTotal,smartDeposit:sl_smartDeposit,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,vatY:0,
+      _sl_land:gf('sl-land'),_sl_const:gf('sl-const'),_sl_sir:soilIR*100,_sl_bir:buildIR*100,_sl_sltv:soilLTV*100,_sl_bltv:buildLTV*100,_sl_sp:soilPeriod,_sl_bp:buildPeriod};
+  }
+
+  // ── 都更合建 ──
+  if(pUrb>0){
+    const c=computeCommon(pUrb);
+    const brokerY=gf('ub-broker')*WAN;           // 萬元→元
+    const evictUnits=gf('ub-units');
+    const evictPerUnit=gf('ub-evict')*WAN;        // 萬/戶→元/戶
+    const evictComp=evictUnits*evictPerUnit;
+    const rentFloor=gf('ub-oldfloor');
+    const rentRate=gf('ub-rent')*WAN;             // 萬/坪/月→元/坪/月
+    const buildPeriod=gf('ub-bp'),soilPeriod=gf('ub-sp');
+    const rentSub=rentFloor*0.9*rentRate*buildPeriod*12;
+    // 合建比由三參數推算
+    const bonR2v=ST.bonR||0,xfrR2v=ST.xfrR||0;
+    const denom=1+bonR2v+xfrR2v;
+    const wLegal=1/denom, wBonus=bonR2v/denom, wTDR=xfrR2v/denom;
+    const pLegal=gf('ub-p-legal')/100, pBonus=gf('ub-p-bonus')/100, pTDR=gf('ub-p-tdr')/100;
+    const ownerR=pLegal*wLegal+pBonus*wBonus+pTDR*wTDR;
+    const mergerR=Math.max(0,Math.min(0.99,1-ownerR));
+    // Update display
+    const rd=document.getElementById('ub-ratio-display');
+    const rdd=document.getElementById('ub-ratio-detail');
+    if(rd)rd.textContent=fmt(mergerR*100,1)+'%';
+    if(rdd)rdd.textContent=`w法定${fmt(wLegal*100,1)}% × 地主${fmt(pLegal*100,0)}% + w獎勵${fmt(wBonus*100,1)}% × 地主${fmt(pBonus*100,0)}% + w容移${fmt(wTDR*100,1)}% × 地主${fmt(pTDR*100,0)}%`;
+    // Visual hint only (never disabled — user may adjust manually)
+    const bw=document.getElementById('ub-p-bonus-wrap'),tw=document.getElementById('ub-p-tdr-wrap');
+    if(bw){bw.style.opacity=bonR2v>0?'1':'0.6';}
+    if(tw){tw.style.opacity=xfrR2v>0?'1':'0.6';}
+    const constPerPing=gf('ub-const')*WAN;        // 萬/坪→元/坪
+    const oldPricePerPing=gf('ub-oldprice')*WAN;  // 萬/坪→元/坪
+    const oldFloorPing=gf('ub-oldfloor');
+    const soilIR=gf('ub-sir')/100||0.035,buildIR=gf('ub-bir')/100||0.035;
+    const soilLTV=gf('ub-sltv')/100||0.7,buildLTV=gf('ub-bltv')/100||0.5;
+
+    const constCost=constPerPing*c.gP;
+    const consultFee=c.aP*WAN,trustFee=c.aP*WAN;
+    const mgmtCost=constCost*mgmtR;
+    const {tdr1:ub_tdr1,tdr2:ub_tdr2,tdrTotal:tdrCost}=calcTDR(c,constPerPing);
+
+    const builderSaleP=c.sP*mergerR,builderCar=Math.round(c.car*mergerR);
+    const builderRev=(builderSaleP*pPing+builderCar*pCar)*WAN;
+    const ownerSaleP=c.sP*(1-mergerR),ownerCar=c.car-builderCar;
+    const ownerRev=(ownerSaleP*pPing+ownerCar*pCar)*WAN;
+    const salesCost=builderRev*salesR;
+
+    // 土融：僅容移費用
+    const soilBase=tdrCost;
+    const soilLoan=soilBase*soilLTV,soilInt=soilLoan*soilIR*soilPeriod;
+    // 建融：建造成本＋建築師費＋管理基金
+    const buildBase=constCost+c.archY+c.fundY;
+    const buildLoan=buildBase*buildLTV,buildInt=buildLoan*buildIR*buildPeriod*0.5;
+
+    const {propTax:_ub_propTax,greenMaint:ub_greenMaint,greenDeposit:ub_greenDeposit,greenTotal:ub_greenTotal,smartDeposit:ub_smartDeposit}=calcNewTaxes(c,builderRev,c.legalCostWan,c.fundY);
+    const ub_propTax=propTaxOn?_ub_propTax:0;
+    const _vatY_raw=builderRev*vatR;
+    const vatY=vatOn?_vatY_raw:0;
+    const totalCost=brokerY+evictComp+rentSub+constCost+c.archY+c.fundY+salesCost+mgmtCost+consultFee+trustFee+tdrCost+soilInt+buildInt+vatY+ub_propTax+ub_greenTotal+ub_smartDeposit;
+    const netProfit=builderRev-totalCost;
+    const equity=totalCost-soilLoan-buildLoan;
+
+    const oldBuildValue=oldPricePerPing*oldFloorPing;
+    const ownerNet=ownerRev-oldBuildValue;
+    const ownerROE=oldBuildValue>0?ownerNet/oldBuildValue:null;
+
+    res.urban={...c,brokerY,evictComp,rentSub,constCost,consultFee,trustFee,tdrCost,ub_tdr1,ub_tdr2,mgmtCost,builderRev,builderSaleP,builderCar,ownerRev,ownerSaleP,ownerCar,salesCost,vatY,propTax:ub_propTax,greenMaint:ub_greenMaint,greenDeposit:ub_greenDeposit,greenTotal:ub_greenTotal,smartDeposit:ub_smartDeposit,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,mergerR,oldBuildValue,ownerNet,ownerROE,
+      _ub_const:gf('ub-const'),_ub_sir:soilIR*100,_ub_bir:buildIR*100,_ub_sltv:soilLTV*100,_ub_bltv:buildLTV*100,_ub_sp:soilPeriod,_ub_bp:buildPeriod};
+  }
+
+  // ── 委託興建 ──
+  if(pComm>0){
+    const c=computeCommon(pComm);
+    const commRate=gf('cm-rate')/100;
+    const constPerPing=gf('cm-const')*WAN;        // 萬/坪→元/坪
+    const oldPricePerPing=gf('cm-oldprice')*WAN;  // 萬/坪→元/坪
+    const oldFloorPing=gf('cm-oldfloor');
+    const buildPeriod=gf('cm-bp');
+    const buildIR=gf('cm-bir')/100||0.035;
+    const buildLTV=gf('cm-bltv')/100||0.5;
+
+    const totalSalesRev=(c.sP*pPing+c.car*pCar)*WAN;
+    const commFee=totalSalesRev*commRate;
+    const constCost=constPerPing*c.gP;
+    const mgmtCost=constCost*mgmtR;
+    const salesCost=totalSalesRev*salesR;
+    const {tdr1:cm_tdr1,tdr2:cm_tdr2,tdrTotal:tdrCost}=calcTDR(c,constPerPing);
+    // 建融：建造成本＋建築師費＋管理基金
+    const buildBase=constCost+c.archY+c.fundY;
+    const buildLoan=buildBase*buildLTV,buildInt=buildLoan*buildIR*buildPeriod*0.5;
+    const {propTax:_cm_propTax,greenMaint:cm_greenMaint,greenDeposit:cm_greenDeposit,greenTotal:cm_greenTotal,smartDeposit:cm_smartDeposit}=calcNewTaxes(c,totalSalesRev,c.legalCostWan,c.fundY);
+    const cm_propTax=propTaxOn?_cm_propTax:0;
+    const ownerSelfCost=constCost+c.archY+c.fundY+salesCost+mgmtCost+tdrCost+buildInt+cm_propTax+cm_greenTotal+cm_smartDeposit;
+    const ownerTotalPay=ownerSelfCost+commFee;
+    const ownerNet=totalSalesRev-ownerTotalPay;
+    const oldBuildValue=oldPricePerPing*oldFloorPing;
+    const ownerInvest=oldBuildValue+commFee+ownerSelfCost;
+    const ownerROE=ownerInvest>0?ownerNet/ownerInvest:null;
+
+    res.comm={...c,commRate,commFee,tdrCost,cm_tdr1,cm_tdr2,totalSalesRev,constCost,mgmtCost,salesCost,propTax:cm_propTax,greenMaint:cm_greenMaint,greenDeposit:cm_greenDeposit,greenTotal:cm_greenTotal,smartDeposit:cm_smartDeposit,buildBase,buildLoan,buildInt,ownerSelfCost,ownerTotalPay,ownerNet,oldBuildValue,ownerInvest,ownerROE,
+      _cm_const:gf('cm-const'),_cm_bir:buildIR*100,_cm_bltv:buildLTV*100,_cm_bp:buildPeriod};
+  }
+
+  // ── Blended builder ROE ──
+  let totalBuilderNet=0,totalBuilderEquity=0,totalBuilderRev=0,totalBuilderCost=0;
+  if(res.self){totalBuilderNet+=res.self.netProfit;totalBuilderEquity+=res.self.equity;totalBuilderRev+=res.self.salesRev;totalBuilderCost+=res.self.totalCost;}
+  if(res.urban){totalBuilderNet+=res.urban.netProfit;totalBuilderEquity+=res.urban.equity;totalBuilderRev+=res.urban.builderRev;totalBuilderCost+=res.urban.totalCost;}
+  if(res.comm){totalBuilderNet+=res.comm.commFee;totalBuilderRev+=res.comm.commFee;}
+  const blendedROE=totalBuilderEquity>0?totalBuilderNet/totalBuilderEquity:null;
+  const blendedROA=totalBuilderCost>0?totalBuilderNet/totalBuilderCost:null;
+
+  ST.s2={res,pSelf,pUrb,pComm,pPing,pCar,blendedROE,blendedROA,totalBuilderNet,totalBuilderEquity,totalBuilderRev,totalBuilderCost};
+  displayS2(res,blendedROE,blendedROA,totalBuilderRev,totalBuilderCost,totalBuilderNet);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// STEP 2: DISPLAY
+// ══════════════════════════════════════════════════════════════════
+function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
+  s('s2-total-rev',res?fmtW(totalRev,0):'—');
+  s('s2-total-cost',res?fmtW(totalCost,0):'—');
+  s('s2-total-profit',res?fmtW(totalProfit,0):'—');
+  s('s2-total-roe',blendedROE!=null?fmt(blendedROE*100,1)+'%':'—');
+  s('s2-total-roa',blendedROA!=null?fmt(blendedROA*100,1)+'%':'—');
+
+  // Table headers
+  document.getElementById('th-self').style.display=res?.self?'':'none';
+  document.getElementById('th-urb').style.display=res?.urban?'':'none';
+  document.getElementById('th-comm').style.display=res?.comm?'':'none';
+
+  const rows=[
+    // [label, selfFn, urbFn, commVal, selfDetail, urbDetail, commDetail]
+    ['土地成本'],
+    ['　購地成本',r=>r.landCost,null,null,
+      r=>`${r._sl_land}萬/坪 × ${fmt(r.aP,1)}坪`,null,null],
+    ['　仲介費',r=>r.brokerFee,r=>r.brokerY,null,
+      r=>`購地成本 × ${gf('sl-broker')}%`,r=>`${fmtW(r.brokerY,1)}`,null],
+    ['　土增稅',r=>r.landTax,null,null,
+      r=>`購地成本 × ${gf('sl-ltax')}%`,null,null],
+    ['　契稅',r=>r.deedTax,null,null,
+      r=>`購地成本 × ${gf('sl-dtax')}%`,null,null],
+    ['　拆遷補償',null,r=>r.evictComp,null,
+      null,r=>`${gf('ub-units')}戶 × ${gf('ub-evict')}萬`,null],
+    ['　租金補貼',null,r=>r.rentSub,null,
+      null,r=>`舊樓地板${gf('ub-oldfloor')}坪 × 0.9 × ${gf('ub-rent')}萬/月 × ${gf('ub-bp')}年`,null],
+    ['　容積移轉費用',r=>r.tdrCost,r=>r.tdrCost,r=>r.tdrCost,
+      r=>`Item1(基地×容移×0.5×公告現值×0.25) ${fmtW(r.sl_tdr1,1)} + Item2(售價×0.85-造價)×基地坪×容積率×容移×0.5 ${fmtW(r.sl_tdr2,1)}`,
+      r=>`Item1 ${fmtW(r.ub_tdr1,1)} + Item2 ${fmtW(r.ub_tdr2,1)}`,
+      r=>`Item1 ${fmtW(r.cm_tdr1,1)} + Item2 ${fmtW(r.cm_tdr2,1)}`],
+    ['工程造價'],
+    ['　建造成本',r=>r.constCost,r=>r.constCost,r=>r.constCost,
+      r=>`${r._sl_const}萬/坪 × ${fmt(r.gP,1)}坪`,
+      r=>`${r._ub_const}萬/坪 × ${fmt(r.gP,1)}坪`,
+      r=>`${r._cm_const}萬/坪 × ${fmt(r.gP,1)}坪`],
+    ['　建築師費',r=>r.archY,r=>r.archY,r=>r.archY,
+      r=>`法定造價${fmt(r.legalCostWan,0)}萬 → 累進費率`,
+      r=>`法定造價${fmt(r.legalCostWan,0)}萬 → 累進費率`,
+      r=>`法定造價${fmt(r.legalCostWan,0)}萬 → 累進費率`],
+    ['　管理基金',r=>r.fundY,r=>r.fundY,r=>r.fundY,
+      r=>`法定造價${fmt(r.legalCostWan,0)}萬 → 累進費率`,
+      r=>`法定造價${fmt(r.legalCostWan,0)}萬 → 累進費率`,
+      r=>`法定造價${fmt(r.legalCostWan,0)}萬 → 累進費率`],
+    ['間接費用'],
+    ['　銷管費用',r=>r.salesCost,r=>r.salesCost,r=>r.salesCost,
+      r=>`建商收入${fmtW(r.salesRev,0)} × ${gf('s2-sr')}%`,
+      r=>`建商分回${fmtW(r.builderRev,0)} × ${gf('s2-sr')}%`,
+      r=>`地主總銷${fmtW(r.totalSalesRev,0)} × ${gf('s2-sr')}%`],
+    ['　管銷費用',r=>r.mgmtCost,r=>r.mgmtCost,r=>r.mgmtCost,
+      r=>`建造成本${fmtW(r.constCost,0)} × ${gf('s2-mr')}%`,
+      r=>`建造成本${fmtW(r.constCost,0)} × ${gf('s2-mr')}%`,
+      r=>`建造成本${fmtW(r.constCost,0)} × ${gf('s2-mr')}%`],
+    ['　都更顧問費',r=>r.consultFee,r=>r.consultFee,null,
+      r=>`${fmt(r.aP,1)}坪 × 1萬`,r=>`${fmt(r.aP,1)}坪 × 1萬`,null],
+    ['　信託費用',null,r=>r.trustFee,null,
+      null,r=>`${fmt(r.aP,1)}坪 × 1萬`,null],
+    ['融資利息'],
+    ['　土融利息',r=>r.soilInt,r=>r.soilInt,null,
+      r=>`基數${fmtW(r.soilBase,0)}×${r._sl_sltv}%×${r._sl_sir}%×${r._sl_sp}年`,
+      r=>`基數${fmtW(r.soilBase,0)}×${r._ub_sltv}%×${r._ub_sir}%×${r._ub_sp}年`,null],
+    ['　建融利息',r=>r.buildInt,r=>r.buildInt,r=>r.buildInt,
+      r=>`基數${fmtW(r.buildBase,0)}×${r._sl_bltv}%×${r._sl_bir}%×${r._sl_bp}年×50%`,
+      r=>`基數${fmtW(r.buildBase,0)}×${r._ub_bltv}%×${r._ub_bir}%×${r._ub_bp}年×50%`,
+      r=>`基數${fmtW(r.buildBase,0)}×${r._cm_bltv}%×${r._cm_bir}%×${r._cm_bp}年×50%`],
+    ['稅費'],
+    ['　營業稅',null,r=>r.vatY,null,
+      null,r=>`建商分回${fmtW(r.builderRev,0)} × ${gf('s2-vat')}%`,null],
+    ['　物交稅',r=>r.propTax,r=>r.propTax,r=>r.propTax,
+      r=>`建商總銷${fmtW(r.salesRev,0)} × 5%`,
+      r=>`建商分回${fmtW(r.builderRev,0)} × 5%`,
+      r=>`地主總銷${fmtW(r.totalSalesRev,0)} × 5%`],
+    ['　綠建築費用',r=>r.greenTotal,r=>r.greenTotal,r=>r.greenTotal,
+      r=>`維護費${fmtW(r.greenMaint,1)}（管理基金×0.5）+ 保證金${fmtW(r.greenDeposit,1)}（法定造價×5%）`,
+      r=>`維護費${fmtW(r.greenMaint,1)}（管理基金×0.5）+ 保證金${fmtW(r.greenDeposit,1)}（法定造價×5%）`,
+      r=>`維護費${fmtW(r.greenMaint,1)}（管理基金×0.5）+ 保證金${fmtW(r.greenDeposit,1)}（法定造價×5%）`],
+    ['　智慧建築保證金',r=>r.smartDeposit,r=>r.smartDeposit,r=>r.smartDeposit,
+      r=>`基地${fmt(r.aM,0)}m²×法定容積×${fmt(gf('s2-smart'),1)}%×公告現值×0.45`,
+      r=>`基地${fmt(r.aM,0)}m²×法定容積×${fmt(gf('s2-smart'),1)}%×公告現值×0.45`,
+      r=>`基地${fmt(r.aM,0)}m²×法定容積×${fmt(gf('s2-smart'),1)}%×公告現值×0.45`],
+    ['建商收入'],
+    ['　建商收入',r=>r.salesRev,r=>r.builderRev,'委託費: '+fmtW(res?.comm?.commFee),
+      r=>`${fmt(r.sP,1)}坪 × ${gf('s2-pprice')}萬 + ${r.car}位 × ${gf('s2-cprice')}萬`,
+      r=>`(${fmt(r.builderSaleP,1)}坪 × ${gf('s2-pprice')}萬)+(${r.builderCar}位 × ${gf('s2-cprice')}萬)`,
+      r=>`地主總銷×${fmt(r.commRate*100,0)}%`],
+    ['total'],
+    ['建商成本合計',r=>r.totalCost,r=>r.totalCost,null],
+    ['建商毛利',r=>r.netProfit,r=>r.netProfit,null],
+    ['建商自有資金',r=>r.equity,r=>r.equity,null,
+      r=>`成本${fmtW(r.totalCost,0)}-土融${fmtW(r.soilLoan,0)}-建融${fmtW(r.buildLoan,0)}`,
+      r=>`成本${fmtW(r.totalCost,0)}-土融${fmtW(r.soilLoan,0)}-建融${fmtW(r.buildLoan,0)}`,null],
+    ['roe'],
+    ['建商ROE',r=>r.roe?fmt(r.roe*100,1)+'%':null,r=>r.roe?fmt(r.roe*100,1)+'%':null,res?.comm?'—（顯示委託費）':null,
+      r=>r.roe?`毛利${fmtW(r.netProfit,0)}÷自有${fmtW(r.equity,0)}`:null,
+      r=>r.roe?`毛利${fmtW(r.netProfit,0)}÷自有${fmtW(r.equity,0)}`:null,null],
+    ['建商ROA',r=>r.roa?fmt(r.roa*100,1)+'%':null,r=>r.roa?fmt(r.roa*100,1)+'%':null,res?.comm?'—':null,
+      r=>r.roa?`毛利${fmtW(r.netProfit,0)}÷總成本${fmtW(r.totalCost,0)}`:null,
+      r=>r.roa?`毛利${fmtW(r.netProfit,0)}÷總成本${fmtW(r.totalCost,0)}`:null,null],
+    ['summary'],
+    ['建商總支出合計',r=>r.totalCost,r=>r.totalCost,r=>r.ownerSelfCost,
+      r=>`成本總計（含所有費用）`,r=>`成本總計（含所有費用）`,r=>`地主自付成本合計`],
+    ['　其中：土融借款',r=>r.soilLoan,r=>r.soilLoan,null,
+      r=>`基數${fmtW(r.soilBase,0)}×${r._sl_sltv}%`,r=>`基數${fmtW(r.soilBase,0)}×${r._ub_sltv}%`,null],
+    ['　其中：建融借款',r=>r.buildLoan,r=>r.buildLoan,r=>r.buildLoan,
+      r=>`基數${fmtW(r.buildBase,0)}×${r._sl_bltv}%`,r=>`基數${fmtW(r.buildBase,0)}×${r._ub_bltv}%`,r=>`基數${fmtW(r.buildBase,0)}×${r._cm_bltv}%`],
+    ['　建商自有資金投入',r=>r.equity,r=>r.equity,null,
+      r=>`總支出${fmtW(r.totalCost,0)}-土融${fmtW(r.soilLoan,0)}-建融${fmtW(r.buildLoan,0)}`,
+      r=>`總支出${fmtW(r.totalCost,0)}-土融${fmtW(r.soilLoan,0)}-建融${fmtW(r.buildLoan,0)}`,null],
+  ];
+
+  const tbody=document.getElementById('s2-tbody');
+  tbody.innerHTML='';
+  rows.forEach(row=>{
+    const[label,selfFn,urbFn,commVal]=row;
+    const isSection=row.length===1&&label!=='total'&&label!=='roe'&&label!=='summary';
+    const isTotal=label==='建商成本合計';
+    const isRev=label==='建商收入'||label.includes('收入');
+    const isProfit=label==='建商毛利';
+    const isROE=label==='建商ROE';
+    const isROA=label==='建商ROA';
+    const isSummary=label==='建商總支出合計';
+    const isSub=label.startsWith('　其中')||label==='　建商自有資金投入';
+
+    if(row.length===1&&(label==='total'||label==='roe'||label==='summary'))return;
+
+    const tr=document.createElement('tr');
+    if(isTotal||isRev||isProfit||isROE||isROA||isSummary||isSub)tr.className=isSummary?'tr-summary':isSub?'tr-sub':isROA?'tr-roa':isROE?'tr-roe':isProfit?'tr-profit':isRev?'tr-rev':'tr-total';
+
+    const td0=document.createElement('td');
+    td0.textContent=label;
+    if(isSection)td0.style.cssText='font-weight:600;color:#333;background:#f7f7f7;font-family:inherit;';
+    tr.appendChild(td0);
+
+    if(!isSection){
+      const [,,,,selfDFn,urbDFn,commDFn]=row;
+      const sv=res?.self?( selfFn?fmtW(selfFn(res.self)):' — '):'';
+      const sd=res?.self&&selfDFn?selfDFn(res.self):null;
+      const uv=res?.urban?(urbFn?fmtW(urbFn(res.urban)):' — '):'';
+      const ud=res?.urban&&urbDFn?urbDFn(res.urban):null;
+      const cv=res?.comm?(typeof commVal==='string'?commVal:(commVal?fmtW(commVal):' — ')):'';
+      const cd=res?.comm&&commDFn?(typeof commDFn==='function'?commDFn(res.comm):null):null;
+      const mkTd=(val,det)=>{
+        const td=document.createElement('td');td.style.textAlign='right';
+        td.innerHTML=val+(det?`<div style="font-size:10px;color:#aaa;font-family:sans-serif;font-weight:400;margin-top:1px;white-space:nowrap;">${det}</div>`:'');
+        return td;
+      };
+      if(res?.self)tr.appendChild(mkTd(sv,sd));
+      if(res?.urban)tr.appendChild(mkTd(uv,ud));
+      if(res?.comm)tr.appendChild(mkTd(cv,cd));
+    }else{
+      const colspan=Object.keys(res||{}).length||1;
+      if(colspan>0){const td=document.createElement('td');td.colSpan=colspan;tr.appendChild(td);}
+    }
+    tbody.appendChild(tr);
+  });
+
+  // Owner result boxes
+  let ownerBoxes='';
+  if(res?.urban){
+    const u=res.urban;
+    ownerBoxes+=`<div class="bbox"><p class="sec" style="margin-bottom:10px;">都更合建　地主分回</p>
+    <div class="brow"><span class="bl">地主分回銷坪</span><span class="bv-b">${fmt(u.ownerSaleP)}坪</span></div>
+    <div class="brow"><span class="bl">地主分回車位</span><span class="bv-b">${u.ownerCar}位</span></div>
+    <div class="brow"><span class="bl">地主分回市值</span><span class="bv-b">${fmtW(u.ownerRev,0)}</span></div>
+    <div class="brow"><span class="bl">舊有建物總價</span><span class="bv">${fmtW(u.oldBuildValue,0)}</span></div>
+    <div class="brow"><span class="bl">地主淨增值</span><span class="bv-t">${fmtW(u.ownerNet,0)}</span></div>
+    <div class="brow"><span class="bl">地主 ROE（增值÷舊建物）</span><span class="bv-g">${u.ownerROE!=null?fmt(u.ownerROE*100,1)+'%':'—'}</span></div>
+    </div>`;
+  }
+  if(res?.comm){
+    const c=res.comm;
+    ownerBoxes+=`<div class="bbox"><p class="sec" style="margin-bottom:10px;">委託興建　委建戶分回</p>
+    <div class="brow"><span class="bl">委建戶取得銷坪</span><span class="bv-p">${fmt(c.sP)}坪</span></div>
+    <div class="brow"><span class="bl">委建戶取得車位</span><span class="bv-p">${c.car}位</span></div>
+    <div class="brow"><span class="bl">委建戶分回市值（總銷）</span><span class="bv-p">${fmtW(c.totalSalesRev,0)}</span></div>
+    <div class="brow"><span class="bl">支付委託費</span><span class="bv">${fmtW(c.commFee,0)}</span></div>
+    <div class="brow"><span class="bl">舊有建物總價</span><span class="bv">${fmtW(c.oldBuildValue,0)}</span></div>
+    <div class="brow"><span class="bl">委建戶淨收益</span><span class="bv-t">${fmtW(c.ownerNet,0)}</span></div>
+    <div class="brow"><span class="bl">委建戶 ROE</span><span class="bv-g">${c.ownerROE!=null?fmt(c.ownerROE*100,1)+'%':'—'}</span></div>
+    </div>`;
+  }
+  document.getElementById('s2-owner-boxes').innerHTML=ownerBoxes;
+
+  // TDR breakdown note
+  const tdrParts=[];
+  if(res?.self&&res.self.tdrCost>0)tdrParts.push(`自地自建：Item1 ${fmtW(res.self.sl_tdr1,2)} ＋ Item2 ${fmtW(res.self.sl_tdr2,2)} = ${fmtW(res.self.tdrCost,2)}`);
+  if(res?.urban&&res.urban.tdrCost>0)tdrParts.push(`都更合建：Item1 ${fmtW(res.urban.ub_tdr1,2)} ＋ Item2 ${fmtW(res.urban.ub_tdr2,2)} = ${fmtW(res.urban.tdrCost,2)}`);
+  if(res?.comm&&res.comm.tdrCost>0)tdrParts.push(`委託興建：Item1 ${fmtW(res.comm.cm_tdr1,2)} ＋ Item2 ${fmtW(res.comm.cm_tdr2,2)} = ${fmtW(res.comm.tdrCost,2)}`);
+  const noteEl=document.getElementById('s2-note');
+  if(noteEl){
+    if(tdrParts.length>0)noteEl.textContent='容積移轉費用明細（Item1=基地m²×容移率×0.5×公告現值×移入降比；Item2=(售價×估價降比-工程造價)×基地坪×法定容積率×容移率×K×0.5）：'+tdrParts.join('；');
+    else if(ST.xfrR>0)noteEl.textContent='⚠ 有容積移轉但公告現值為0或工程造價未填，Item1/Item2可能為0，請確認輸入。';
+    else noteEl.textContent='＊ 無容積移轉，容移費用為0。';
+  }
+}
+
+function updateS2Summary(){
+  s('s2-aP',ST.aPing>0?fmt(ST.aPing)+'坪':'—');
+  s('s2-tP',ST.totalPing>0?fmt(ST.totalPing)+'坪':'—');
+  s('s2-sP',ST.salePing>0?fmt(ST.salePing)+'坪':'—');
+  s('s2-fl',(ST.finalFloors||'—')+'F / '+(ST.totalCar||ST.totalCar===0?ST.totalCar:'—')+'位');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// STEP 3: DISPLAY
+// ══════════════════════════════════════════════════════════════════
+function updateS3Summary(){
+  const s2=ST.s2;
+  s('s3-sp',ST.salePing>0?fmt(ST.salePing)+'坪':'—');
+  s('s3-car',ST.totalCar+'位');
+  s('s3-rev',s2?fmtW(s2.totalBuilderRev,0):'—');
+  s('s3-roe',s2&&s2.blendedROE!=null?fmt(s2.blendedROE*100,1)+'%':'—');
+  s('s3-roa',s2&&s2.blendedROA!=null?fmt(s2.blendedROA*100,1)+'%':'—');
+}
+
+function buildRatioHTML(newReg, oldReg, indoorR){
+  if(!oldReg||oldReg<=0)return '';
+  const pubRatio=ST.P||0;
+  const ratio1=newReg/oldReg;
+  const newIndoor=newReg*(1-pubRatio);
+  const oldIndoor=oldReg*indoorR;
+  const ratio2=oldIndoor>0?newIndoor/oldIndoor:null;
+  const c1=ratio1>=1?'delta-pos':'delta-neg';
+  const c2=ratio2!=null?(ratio2>=1?'delta-pos':'delta-neg'):'';
+  return '<div class="brow" style="background:#EBF3FC;border-radius:6px;padding:8px 10px;margin-top:6px;">'
+    +'<span class="bl" style="font-weight:600;font-size:11.5px;">換回比</span><span></span></div>'
+    +'<div class="brow"><span class="bl">① 權狀坪換回比<span class="tag tg-b" style="font-size:9px;">新÷舊</span></span>'
+    +'<span class="'+c1+'" style="font-family:monospace;font-size:15px;font-weight:700;">'+fmt(ratio1,3)+'</span></div>'
+    +'<div class="brow"><span class="bl" style="font-size:11px;color:#888;">　新權狀'+fmt(newReg,1)+'坪 ÷ 舊權狀'+fmt(oldReg,1)+'坪</span><span></span></div>'
+    +'<div class="brow"><span class="bl">② 室內坪換回比<span class="tag tg-b" style="font-size:9px;">新÷舊</span></span>'
+    +'<span class="'+c2+'" style="font-family:monospace;font-size:15px;font-weight:700;">'+(ratio2!=null?fmt(ratio2,3):'—')+'</span></div>'
+    +'<div class="brow"><span class="bl" style="font-size:11px;color:#888;">　新室內'+fmt(newIndoor,1)+'坪（×'+fmt((1-pubRatio)*100,1)+'%）÷ 舊室內'+fmt(oldIndoor,1)+'坪（×'+fmt(indoorR*100,0)+'%）</span><span></span></div>';
+}
+
+function renderS3(){
+  const s2=ST.s2;
+  if(!s2){document.getElementById('s3-content').innerHTML='<div class="al al-i">請先完成步驟二的輸入，再查看分回計算。</div>';return;}
+  const{res,pPing,pCar,blendedROE,blendedROA,totalBuilderNet,totalBuilderEquity,totalBuilderCost}=s2;
+  let html='';
+
+  if(res.self){
+    const r=res.self;
+    html+=`<div class="ret-party" style="margin-bottom:12px;">
+    <div class="ret-party-hd hd-builder"><span>自地自建　建商分回</span><span class="tag" style="background:rgba(255,255,255,.2);color:#fff;">比例 ${fmt(s2.pSelf*100,0)}%</span></div>
+    <div class="ret-party-bd">
+      <div class="g4" style="margin-bottom:10px;">
+        <div class="hi teal"><p class="ml">建商分回銷坪</p><p class="mv">${fmt(r.sP)}坪</p><p class="ms">全部歸建商</p></div>
+        <div class="hi teal"><p class="ml">建商分回車位</p><p class="mv">${r.car}位</p><p class="ms">全部歸建商</p></div>
+        <div class="hi teal"><p class="ml">建商分回市值</p><p class="mv">${fmtW(r.salesRev,0)}</p><p class="ms">銷坪×坪價＋車位×位價</p></div>
+        <div class="hi green2"><p class="ml">建商 ROE</p><p class="mv">${r.roe!=null?fmt(r.roe*100,1)+'%':'—'}</p><p class="ms">毛利÷自有資金</p></div>
+        <div class="hi purple"><p class="ml">建商 ROA</p><p class="mv">${r.roa!=null?fmt(r.roa*100,1)+'%':'—'}</p><p class="ms">毛利÷總成本</p></div>
+      </div>
+      <div class="brow"><span class="bl">建商毛利</span><span class="bv-g">${fmtW(r.netProfit,0)}</span></div>
+      <div class="brow"><span class="bl">建商自有資金</span><span class="bv">${fmtW(r.equity,0)}</span></div>
+    </div></div>`;
+  }
+
+  if(res.urban){
+    const r=res.urban;
+    const pPingY=s2.pPing*WAN, pCarY=s2.pCar*WAN;
+    // Read negotiation inputs (may not exist yet on first render)
+    const negPing=parseFloat(document.getElementById('neg-ping')?.value)||0;
+    const negCar=parseFloat(document.getElementById('neg-car')?.value)||0;
+    const negCash=(parseFloat(document.getElementById('neg-cash')?.value)||0)*WAN;
+    const ownerOrigPing=parseFloat(document.getElementById('neg-orig')?.value)||ST.existPing||0;
+    const indoorRatio=parseFloat(document.getElementById('neg-indoor-ratio')?.value)||0.9;
+
+    // Post-negotiation builder
+    const bActualP=r.builderSaleP-negPing;
+    const bActualCar=r.builderCar-negCar;
+    const bActualRev=(bActualP*s2.pPing+bActualCar*s2.pCar)*WAN;
+    const bActualNet=r.netProfit-(negPing*pPingY+negCar*pCarY+negCash);
+    const bActualROE=r.equity>0?bActualNet/r.equity:null;
+    const bActualROA=r.totalCost>0?bActualNet/r.totalCost:null;
+
+    // Post-negotiation owner
+    const oActualP=r.ownerSaleP+negPing;
+    const oActualCar=r.ownerCar+negCar;
+    const oActualRev=(oActualP*s2.pPing+oActualCar*s2.pCar)*WAN+negCash;
+    const oActualNet=oActualRev-r.oldBuildValue;
+    const oActualROE=r.oldBuildValue>0?oActualNet/r.oldBuildValue:null;
+
+    const hasNeg=negPing>0||negCar>0||negCash>0;
+    const negLabel=hasNeg?'（談判後）':'';
+
+    html+=`<div class="ret-party" style="margin-bottom:0;">
+    <div class="ret-party-hd hd-builder"><span>都更合建　建商分回${negLabel?'<span class="neg-tag">含談判讓步</span>':''}</span><span class="tag" style="background:rgba(255,255,255,.2);color:#fff;">合建比 ${fmt(r.mergerR*100,0)}%</span></div>
+    <div class="ret-party-bd">
+      <div class="g4" style="margin-bottom:6px;">
+        <div class="hi teal"><p class="ml">建商分回銷坪</p><p class="mv">${fmt(r.builderSaleP)}坪</p><p class="ms">合建比分配</p></div>
+        <div class="hi teal"><p class="ml">建商分回車位</p><p class="mv">${r.builderCar}位</p><p class="ms">合建比分配</p></div>
+        <div class="hi teal"><p class="ml">建商分回市值</p><p class="mv">${fmtW(r.builderRev,0)}</p><p class="ms">談判前</p></div>
+        <div class="hi blue"><p class="ml">建商毛利（談判前）</p><p class="mv">${fmtW(r.netProfit,0)}</p><p class="ms">分回市值－總成本</p></div>
+        <div class="hi green2"><p class="ml">建商 ROE（談判前）</p><p class="mv">${r.roe!=null?fmt(r.roe*100,1)+'%':'—'}</p><p class="ms">毛利÷自有資金</p></div>
+      </div>
+      ${hasNeg?`
+      <div style="background:#f0f9f5;border-radius:6px;padding:8px 10px;margin-bottom:6px;">
+        <div class="brow"><span class="bl">讓出坪數</span><span class="delta-neg">−${fmt(negPing,1)}坪</span></div>
+        <div class="brow"><span class="bl">讓出車位</span><span class="delta-neg">−${negCar}位</span></div>
+        <div class="brow"><span class="bl">支付現金</span><span class="delta-neg">−${fmtW(negCash,1)}</span></div>
+        <div class="brow" style="border-top:1px solid #ccc;margin-top:4px;padding-top:6px;"><span class="bl" style="font-weight:600;">建商實得銷坪</span><span class="bv-g">${fmt(bActualP,1)}坪</span></div>
+        <div class="brow"><span class="bl" style="font-weight:600;">建商實得車位</span><span class="bv-g">${bActualCar}位</span></div>
+        <div class="brow"><span class="bl" style="font-weight:600;">建商實得市值</span><span class="bv-g">${fmtW(bActualRev,0)}</span></div>
+        <div class="brow"><span class="bl" style="font-weight:600;">建商毛利（談判後）</span><span class="${bActualNet>=0?'bv-b':'bv-r'}" style="font-size:15px;">${fmtW(bActualNet,0)}</span></div>
+        <div class="brow"><span class="bl" style="font-weight:600;">建商 ROE（談判後）</span><span class="bv-p">${bActualROE!=null?fmt(bActualROE*100,1)+'%':'—'}</span></div>
+        <div class="brow"><span class="bl" style="font-weight:600;">建商 ROA（談判後）</span><span class="bv-p">${bActualROA!=null?fmt(bActualROA*100,1)+'%':'—'}</span></div>
+      </div>`:''}
+    </div></div>
+
+    <!-- 談判讓步輸入 -->
+    <div class="neg-box">
+      <div class="neg-hd">🤝 建商與地主談判讓步條件</div>
+      <div class="g4">
+        <div class="fd"><label>建商讓出坪數</label><input type="number" id="neg-ping" value="${negPing||''}" max="${fmt(r.builderSaleP,1)}" step="0.5" placeholder="0" oninput="renderS3()"/><div class="un">坪（從建商分回扣回）</div></div>
+        <div class="fd"><label>建商讓出車位</label><input type="number" id="neg-car" value="${negCar||''}" step="1" placeholder="0" oninput="renderS3()"/><div class="un">位（從建商分回扣回）</div></div>
+        <div class="fd"><label>建商支付現金</label><input type="number" id="neg-cash" value="${negCash/WAN||''}" min="0" step="10" placeholder="0" oninput="renderS3()"/><div class="un">萬元（從建商淨利扣除）</div></div>
+
+      </div>
+    </div>
+
+    <div class="ret-party" style="margin-bottom:12px;">
+    <div class="ret-party-hd hd-owner"><span>都更合建　地主分回${negLabel?'<span class="neg-tag" style="background:rgba(255,255,255,.25);color:#fff;">含談判讓步</span>':''}</span><span class="tag" style="background:rgba(255,255,255,.2);color:#fff;">合建比地主 ${fmt((1-r.mergerR)*100,0)}%</span></div>
+    <div class="ret-party-bd">
+      <div class="g4" style="margin-bottom:6px;">
+        <div class="hi blue"><p class="ml">地主分回銷坪${ownerOrigPing?`<br><span style="font-size:10px;color:#666;">原權狀 ${fmt(ownerOrigPing,1)}坪</span>`:''}</p><p class="mv">${fmt(hasNeg?oActualP:r.ownerSaleP,1)}坪</p><p class="ms">${hasNeg?`基本${fmt(r.ownerSaleP,1)}+讓步${fmt(negPing,1)}`:`總銷坪×${fmt((1-r.mergerR)*100,0)}%`}</p></div>
+        <div class="hi blue"><p class="ml">地主分回車位</p><p class="mv">${hasNeg?oActualCar:r.ownerCar}位</p><p class="ms">${hasNeg?`基本${r.ownerCar}+讓步${negCar}`:`總車位×${fmt((1-r.mergerR)*100,0)}%`}</p></div>
+        <div class="hi blue"><p class="ml">地主分回市值</p><p class="mv">${fmtW(hasNeg?oActualRev:r.ownerRev,0)}</p><p class="ms">${hasNeg?'含談判讓步':'地主部分'}</p></div>
+        <div class="hi green2"><p class="ml">地主 ROE</p><p class="mv">${(hasNeg?oActualROE:r.ownerROE)!=null?fmt((hasNeg?oActualROE:r.ownerROE)*100,1)+'%':'—'}</p><p class="ms">增值÷舊建物價值</p></div>
+      </div>
+      <div style="background:#f0f6ff;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
+        <div style="font-size:11px;font-weight:600;color:#185FA5;margin-bottom:8px;">地主舊建物資料</div>
+        <div class="g3">
+          <div class="fd"><label>地主原權狀坪</label><input type="number" id="neg-orig" value="${ownerOrigPing||''}" min="0" step="0.5" placeholder="${fmt(ST.existPing||0,1)||'（選填）'}" oninput="renderS3()"/><div class="un">坪（換回比用，預設帶入現有建物面積）</div></div>
+          <div class="fd"><label>舊建物室內面積比</label><input type="number" id="neg-indoor-ratio" value="${indoorRatio||0.9}" min="0.5" max="1" step="0.01" oninput="renderS3()"/><div class="un">預設0.9（舊室內÷權狀）</div></div>
+        </div>
+      </div>
+      <div class="brow"><span class="bl">舊有建物總價</span><span class="bv">${fmtW(r.oldBuildValue,0)}</span></div>
+      ${hasNeg?`<div class="brow"><span class="bl">　基本分回市值</span><span class="bv">${fmtW(r.ownerRev,0)}</span></div>
+      <div class="brow"><span class="bl">　讓坪市值</span><span class="bv-t">+${fmtW(negPing*pPingY+negCar*pCarY,1)}</span></div>
+      <div class="brow"><span class="bl">　談判現金</span><span class="bv-t">+${fmtW(negCash,1)}</span></div>`:''}
+      <div class="brow"><span class="bl">地主淨增值</span><span class="bv-t">${fmtW(hasNeg?oActualNet:r.ownerNet,0)}</span></div>
+      ${ownerOrigPing>0?`
+      <div class="brow" style="border-top:1px dashed #ccc;margin-top:6px;padding-top:6px;">
+        <span class="bl">原權狀坪 vs 分回坪</span>
+        <span class="${(hasNeg?oActualP:r.ownerSaleP)>=ownerOrigPing?'delta-pos':'delta-neg'}">${ownerOrigPing}坪 → ${fmt(hasNeg?oActualP:r.ownerSaleP,1)}坪（${(hasNeg?oActualP:r.ownerSaleP)>=ownerOrigPing?'+':''}${fmt((hasNeg?oActualP:r.ownerSaleP)-ownerOrigPing,1)}坪）</span>
+      </div>
+      ${buildRatioHTML(hasNeg?oActualP:r.ownerSaleP,ownerOrigPing,indoorRatio)}
+      `:''}
+    </div></div>`;
+
+    // Update blended ROE/ROA if negotiation active
+    if(hasNeg){
+      const adjNet=totalBuilderNet-(negPing*pPingY+negCar*pCarY+negCash);
+      s('s3-blend-roe',totalBuilderEquity>0?fmt(adjNet/totalBuilderEquity*100,1)+'%（談判後）':'—');
+      s('s3-blend-roa',totalBuilderCost>0?fmt(adjNet/totalBuilderCost*100,1)+'%（談判後）':'—');
+      s('s3-blend-profit',fmtW(adjNet,0)+'（談判後）');
+      s('s3-urb-profit',fmtW(r.netProfit-(negPing*pPingY+negCar*pCarY+negCash),0)+'（談判後）');
+    }
+  }
+
+  if(res.comm){
+    const r=res.comm;
+    html+=`<div class="ret-party" style="margin-bottom:12px;">
+    <div class="ret-party-hd hd-commission"><span>委託興建　建商（委託費）</span><span class="tag" style="background:rgba(255,255,255,.2);color:#fff;">比例 ${fmt(s2.pComm*100,0)}%｜委託費率 ${fmt(r.commRate*100,0)}%</span></div>
+    <div class="ret-party-bd">
+      <div class="brow"><span class="bl">委託費（建商收入）</span><span class="bv-t">${fmtW(r.commFee,0)}</span></div>
+      <div class="brow"><span class="bl">計算基礎（地主總銷售額）</span><span class="bv">${fmtW(r.totalSalesRev,0)}</span></div>
+    </div></div>
+    <div class="ret-party" style="margin-bottom:12px;">
+    <div class="ret-party-hd hd-owner"><span>委託興建　委建戶分回</span></div>
+    <div class="ret-party-bd">
+      <div class="g4" style="margin-bottom:10px;">
+        <div class="hi blue"><p class="ml">取得銷坪</p><p class="mv">${fmt(r.sP)}坪</p><p class="ms">全部歸委建戶</p></div>
+        <div class="hi blue"><p class="ml">取得車位</p><p class="mv">${r.car}位</p><p class="ms">全部歸委建戶</p></div>
+        <div class="hi blue"><p class="ml">分回市值</p><p class="mv">${fmtW(r.totalSalesRev,0)}</p><p class="ms">全案總銷</p></div>
+        <div class="hi green2"><p class="ml">委建戶 ROE</p><p class="mv">${r.ownerROE!=null?fmt(r.ownerROE*100,1)+'%':'—'}</p><p class="ms">淨收益÷投入</p></div>
+      </div>
+      <div class="brow"><span class="bl">委建戶投入（舊建物＋委託費＋自負成本）</span><span class="bv">${fmtW(r.ownerInvest,0)}</span></div>
+      <div class="brow"><span class="bl">委建戶淨收益</span><span class="bv-t">${fmtW(r.ownerNet,0)}</span></div>
+    </div></div>`;
+  }
+
+  document.getElementById('s3-content').innerHTML=html;
+
+  // Blended
+  s('s3-blend-roe',blendedROE!=null?fmt(blendedROE*100,1)+'%':'—');
+  s('s3-blend-roa',blendedROA!=null?fmt(blendedROA*100,1)+'%':'—');
+  s('s3-blend-profit',fmtW(totalBuilderNet,0));
+  s('s3-blend-equity',fmtW(totalBuilderEquity,0));
+  s('s3-blend-cost',fmtW(totalBuilderCost,0));
+  s('s3-self-profit',res.self?fmtW(res.self.netProfit,0):'—');
+  s('s3-urb-profit',res.urban?fmtW(res.urban.netProfit,0):'—');
+  s('s3-comm-fee',res.comm?fmtW(res.comm.commFee,0):'—');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// EVENT LISTENERS
+// ══════════════════════════════════════════════════════════════════
+document.getElementById('f-K').addEventListener('input',()=>syncKP('K'));
+document.getElementById('f-P').addEventListener('input',()=>syncKP('P'));
+document.getElementById('f-B').addEventListener('input',()=>syncKP('B'));
+document.getElementById('f-unit').addEventListener('change',function(){
+  const u=this.value==='ping'?'坪':'m²';
+  document.getElementById('area-lbl').textContent=u;
+  document.getElementById('exist-lbl').textContent=u;calcS1();
+});
+document.getElementById('f-zone').addEventListener('change',function(){
+  const p=ZONE_PRE[this.value];
+  const farEl=document.getElementById('f-far'),bcrEl=document.getElementById('f-bcr');
+  if(p){
+    farEl.value=p[0];farEl.classList.add('auto');
+    bcrEl.value=p[1];bcrEl.classList.add('auto');
+  }
+  updateUI1();calcS1();
+});
+// Remove auto hint when user manually edits
+['f-far','f-bcr'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('input',function(){this.classList.remove('auto');});
+});
+document.getElementById('f-city').addEventListener('change',function(){updateUI1();calcS1();});
+['f-area','f-exist','f-far','f-bcr','f-bonus','f-transfer','f-units','f-parksize','f-motosize','f-excavate','f-W','f-D','f-h1','f-hs','f-ann','f-lp','f-mkt'].forEach(id=>{
+  const el=document.getElementById(id);if(el)el.addEventListener('input',calcS1);
+});
+
+// Step 2 listeners
+['s2-pprice','s2-cprice','s2-struct','s2-sr','s2-mr','s2-vat','s2-smart',
+ 'sl-land','sl-broker','sl-ltax','sl-dtax','sl-const','sl-sir','sl-bir','sl-sltv','sl-bltv','sl-sp','sl-bp',
+ 'ub-broker','ub-units','ub-evict','ub-oldfloor','ub-rent','ub-p-legal','ub-p-bonus','ub-p-tdr','ub-const','ub-oldprice','ub-sir','ub-bir','ub-sltv','ub-bltv','ub-sp','ub-bp',
+ 'cm-rate','cm-const','cm-oldprice','cm-oldfloor','cm-bir','cm-bltv','cm-bp','ub-tdr-f1','ub-tdr-f2'].forEach(id=>{
+  const el=document.getElementById(id);if(el)el.addEventListener('input',calcS2);
+});
+['s2-vat-on','s2-proptax-on'].forEach(id=>{
+  const el=document.getElementById(id);if(el)el.addEventListener('change',calcS2);
+});
+['s2-pself','s2-purb','s2-pcomm'].forEach(id=>{
+  const el=document.getElementById(id);if(el)el.addEventListener('input',()=>{checkPct();calcS2();});
+});
+
+// Init
+updateUI1();calcS1();checkPct();
+// ══════════════════════════════════════════════════════════════════
+// SAVE / LOAD PROJECT
+// ══════════════════════════════════════════════════════════════════
+const SAVE_VERSION='1.1';
+
+// All input/select IDs to persist
+const ALL_FIELD_IDS=[
+  // Step 1
+  'f-name','f-city','f-zone','f-area','f-unit','f-exist',
+  'f-far','f-bcr','f-bonus','f-transfer',
+  'f-K','f-P','f-B',
+  'f-units','f-parksize','f-motosize','f-excavate',
+  'f-W','f-D','f-h1','f-hs',
+  'f-ann','f-lp','f-mkt',
+  // Step 2 shared
+  's2-pprice','s2-cprice','s2-struct','s2-sr','s2-mr',
+  's2-vat','s2-smart',
+  's2-pself','s2-purb','s2-pcomm',
+  // Step 2 self
+  'sl-land','sl-broker','sl-ltax','sl-dtax','sl-const',
+  'sl-sir','sl-bir','sl-sltv','sl-bltv','sl-sp','sl-bp',
+  // Step 2 urban
+  'ub-tdr-f1','ub-tdr-f2','ub-p-legal','ub-p-bonus','ub-p-tdr',
+  'ub-const','ub-broker','ub-units','ub-evict',
+  'ub-oldfloor','ub-rent','ub-oldprice',
+  'ub-sir','ub-bir','ub-sltv','ub-bltv','ub-sp','ub-bp',
+  // Step 2 comm
+  'cm-rate','cm-const','cm-oldprice','cm-oldfloor','cm-bir','cm-bltv','cm-bp',
+];
+
+function saveProject(){
+  const data={
+    version:SAVE_VERSION,
+    savedAt:new Date().toISOString(),
+    projectName:document.getElementById('f-name')?.value||'未命名專案',
+    inputs:{},
+    owners:[...owners]
+  };
+  ALL_FIELD_IDS.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)data.inputs[id]=el.value;
+  });
+  ['s2-vat-on','s2-proptax-on'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)data.inputs[id]=el.checked?'1':'0';
+  });
+  const json=JSON.stringify(data,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const name=(data.projectName||'都更試算').replace(/[/\\:*?"<>|]/g,'_');
+  a.href=url;a.download=name+'_'+new Date().toLocaleDateString('zh-TW').replace(/\//g,'')+'.json';
+  a.click();URL.revokeObjectURL(url);
+  const st=document.getElementById('save-status');
+  if(st){st.textContent='✓ 已儲存 '+new Date().toLocaleTimeString('zh-TW');setTimeout(()=>{st.textContent='';},4000);}
+}
+
+function loadProject(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.inputs)throw new Error('格式錯誤');
+      // Restore inputs — first pass: values only (no events)
+      Object.entries(data.inputs).forEach(([id,val])=>{
+        const el=document.getElementById(id);
+        if(!el)return;
+        el.value=val;
+        if(el.type==='checkbox')el.checked=val!=='0';
+      });
+      // Second pass: fire SELECT change events after all values are restored
+      // Zone must fire first so far/bcr presets are set, then far/bcr values from JSON win if non-empty
+      ['f-zone','f-city','f-unit','s2-struct'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el)el.dispatchEvent(new Event('change'));
+      });
+      // If far/bcr were saved as non-empty, restore them over the zone preset
+      ['f-far','f-bcr'].forEach(id=>{
+        const saved=data.inputs[id];
+        const el=document.getElementById(id);
+        if(el&&saved!==undefined&&saved!==''){el.value=saved;el.classList.remove('auto');}
+      });
+      // Restore owners
+      if(Array.isArray(data.owners))owners=[...data.owners];
+      // Recalculate all
+      syncKP('K');
+      checkPct();
+      updateUI1();
+      calcS1();
+      calcS2();
+      calcS4();
+      const st=document.getElementById('save-status');
+      const saved=data.savedAt?new Date(data.savedAt).toLocaleString('zh-TW'):'';
+      if(st){st.textContent=`✓ 已載入：${data.projectName||''}${saved?' ('+saved+')':''}`;setTimeout(()=>{st.textContent='';},5000);}
+    }catch(err){
+      alert('載入失敗：'+err.message);
+    }
+    input.value=''; // reset so same file can be reloaded
+  };
+  reader.readAsText(file);
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// STEP 4: INDIVIDUAL LANDOWNER ALLOCATION
+// ══════════════════════════════════════════════════════════════════
+let owners=[]; // [{name,landPing,weight,buildPing,oldPrice}]
+
+function addOwner(){
+  owners.push({name:'',landPing:0,weight:1,buildPing:0,oldPrice:0});
+  calcS4();
+}
+function deleteOwner(i){
+  owners.splice(i,1);calcS4();
+}
+
+function updateS4Summary(){
+  const s2=ST.s2;
+  const u=s2?.res?.urban;
+  s('s4-ownerSP',u?fmt(u.ownerSaleP,1)+'坪':'— (需完成步驟二)');
+  s('s4-ownerCar',u?fmt(u.ownerCar,2)+'位':'—');
+  s('s4-basePing',ST.aPing>0?fmt(ST.aPing,1)+'坪':'—');
+  s('s4-prices',s2?s2.pPing+'萬/坪　'+s2.pCar+'萬/位':'—');
+}
+
+function calcS4(){
+  updateS4Summary();
+  const s2=ST.s2,u=s2?.res?.urban;
+  const ownerTotalSaleP=u?.ownerSaleP||0;
+  const ownerTotalCar=u?.ownerCar||0;
+  const basePing=ST.aPing||0;
+  const pPing=s2?.pPing||0,pCar=s2?.pCar||0;
+  const rentRate=gf('ub-rent')||0;     // 萬/坪/月
+  const period=gf('ub-bp')||0;         // 年
+
+  const el=document.getElementById('s4-list');
+  if(!el)return;
+
+  if(owners.length===0){
+    el.innerHTML='<div class="al al-i" style="margin-bottom:12px;">點擊「＋ 新增地主」開始輸入地主資料。</div>';
+    document.getElementById('s4-totals').style.display='none';
+    return;
+  }
+
+  let totLand=0,totSale=0,totRent=0;
+  let html='';
+
+  owners.forEach((o,i)=>{
+    const ratio=basePing>0?o.landPing/basePing:0;
+    const adjSaleP=ownerTotalSaleP*ratio*(o.weight||1);
+    const carRatio=ownerTotalCar*ratio;
+    const totalVal=adjSaleP*pPing+carRatio*pCar;        // 萬元
+    const rentSub=o.buildPing*rentRate*period*12;       // 萬元
+    const oldBuildVal=o.oldPrice*o.buildPing;           // 萬元
+    const roe=oldBuildVal>0?(totalVal-oldBuildVal)/oldBuildVal:null;
+    totLand+=o.landPing;totSale+=adjSaleP;totRent+=rentSub;
+
+    const roeColor=roe==null?'#aaa':roe>=0?'#0F6E75':'#D85A30';
+
+    html+=`<div class="bbox" style="margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:600;color:#333;">${o.name||'地主 '+(i+1)}</div>
+      <button onclick="deleteOwner(${i})" style="font-size:11px;padding:3px 10px;background:#fee;border:1px solid #fcc;border-radius:5px;cursor:pointer;color:#993;font-family:inherit;">刪除</button>
+    </div>
+    <!-- Inputs -->
+    <div class="g4" style="margin-bottom:12px;">
+      <div class="fd"><label>地主名稱</label><input type="text" value="${o.name}" placeholder="（選填）" oninput="owners[${i}].name=this.value;calcS4()"/></div>
+      <div class="fd"><label>土地坪數</label><input type="number" value="${o.landPing||''}" min="0" step="0.1" placeholder="0" oninput="owners[${i}].landPing=parseFloat(this.value)||0;calcS4()"/><div class="un">坪</div></div>
+      <div class="fd"><label>加權係數</label><input type="number" value="${o.weight!=null?o.weight:1}" min="0" max="5" step="0.1" placeholder="1" oninput="owners[${i}].weight=parseFloat(this.value)||1;calcS4()"/><div class="un">預設1，不影響車位</div></div>
+      <div class="fd"><label>建物權狀坪</label><input type="number" value="${o.buildPing||''}" min="0" step="0.1" placeholder="0" oninput="owners[${i}].buildPing=parseFloat(this.value)||0;calcS4()"/><div class="un">坪（租金補貼用）</div></div>
+      <div class="fd"><label>舊建物估價</label><input type="number" value="${o.oldPrice||''}" min="0" step="0.1" placeholder="0" oninput="owners[${i}].oldPrice=parseFloat(this.value)||0;calcS4()"/><div class="un">萬元／坪（ROE用）</div></div>
+    </div>
+    <!-- Results -->
+    <div style="background:#f7f7f7;border-radius:8px;padding:12px 14px;">
+      <div class="g4" style="margin-bottom:10px;">
+        <div class="hi teal" style="min-width:0;">
+          <p class="ml">土地佔比</p>
+          <p class="mv">${basePing>0?fmt(ratio*100,2)+'%':'—'}</p>
+          <p class="ms">${o.landPing?fmt(o.landPing,1)+'÷'+fmt(basePing,1)+'坪':''}</p>
+        </div>
+        <div class="hi amber" style="min-width:0;">
+          <p class="ml">分回銷坪${o.weight!==1&&o.weight?'<span class="tag tg-a">加權×'+o.weight+'</span>':''}</p>
+          <p class="mv">${fmt(adjSaleP,2)}坪</p>
+          <p class="ms">${ownerTotalSaleP?fmt(ownerTotalSaleP,1)+'×'+fmt(ratio*100,2)+'%'+(o.weight!==1&&o.weight?'×'+o.weight:''):''}</p>
+        </div>
+        <div class="hi blue" style="min-width:0;">
+          <p class="ml">分回車位（比例）</p>
+          <p class="mv">${fmt(carRatio,3)}位</p>
+          <p class="ms">${ownerTotalCar?fmt(ownerTotalCar,2)+'×'+fmt(ratio*100,2)+'%':''}</p>
+        </div>
+        <div class="hi teal" style="min-width:0;background:#EAF3DE;border-color:#C0DD97;">
+          <p class="ml" style="color:#3B6D11;">分回總價值</p>
+          <p class="mv" style="color:#27500A;">${fmt(totalVal,1)}萬</p>
+          <p class="ms" style="color:#639922;">${adjSaleP>0?fmt(adjSaleP,2)+'坪×'+pPing+'萬＋'+fmt(carRatio,3)+'位×'+pCar+'萬':''}</p>
+        </div>
+      </div>
+      <div class="brow"><span class="bl">租金補貼</span><span class="bv-b">${fmt(rentSub,2)}萬</span></div>
+      <div class="brow"><span class="bl" style="font-size:10.5px;color:#aaa;">　= 建物${o.buildPing}坪 × ${rentRate}萬/月 × ${period}年 × 12</span><span></span></div>
+      <div class="brow"><span class="bl">舊建物總價</span><span class="bv">${oldBuildVal>0?fmt(oldBuildVal,1)+'萬':'—（未填估價）'}</span></div>
+      <div class="brow" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px;">
+        <span class="bl" style="font-weight:600;">個人 ROE</span>
+        <span style="font-family:monospace;font-size:16px;font-weight:700;color:${roeColor};">${roe!=null?fmt(roe*100,1)+'%':'—（未填估價）'}</span>
+      </div>
+    </div>
+    </div>`;
+  });
+
+  el.innerHTML=html;
+
+  // Totals
+  const totEl=document.getElementById('s4-totals');
+  if(totEl){
+    totEl.style.display='block';
+    s('s4-tot-land',fmt(totLand,1)+'坪');
+    s('s4-tot-base',fmt(basePing,1)+'坪　'+(basePing>0?'（已納入 '+fmt(totLand/basePing*100,1)+'%）':''));
+    s('s4-tot-sale',fmt(totSale,2)+'坪');
+    s('s4-tot-sale-ref',fmt(ownerTotalSaleP,2)+'坪　差異 '+(totSale-ownerTotalSaleP>=0?'+':'')+fmt(totSale-ownerTotalSaleP,2)+'坪');
+    s('s4-tot-rent',fmt(totRent,2)+'萬');
+  }
+}
+
+</script>
+</body></html>
