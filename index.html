@@ -91,6 +91,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 /* Step nav buttons */
 .nav-btns{display:flex;justify-content:space-between;align-items:center;margin-top:20px;}
 .btn-p{padding:9px 20px;background:#f0f0f0;color:#333;border:1px solid #ddd;border-radius:7px;cursor:pointer;font-size:13px;font-family:inherit;}
+.btn-c{padding:9px 18px;background:#fff;color:#1D9E75;border:1.5px solid #1D9E75;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;}
+.btn-c:active{background:#E1F5EE;}
 .btn-n{padding:9px 20px;background:#1D9E75;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;}
 .sum-ok{color:#0F6E56;font-size:12px;font-weight:500;}
 .sum-err{color:#D85A30;font-size:12px;font-weight:500;}
@@ -131,6 +133,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <span style="font-size:11px;color:#aaa;" id="save-status"></span>
   <input type="file" id="load-file" accept=".json" style="display:none" onchange="loadProject(this)"/>
   <button onclick="document.getElementById('load-file').click()" style="padding:5px 14px;font-size:12px;background:#fff;border:1px solid #ddd;border-radius:6px;cursor:pointer;color:#555;font-family:inherit;">📂 載入專案</button>
+  <button class="btn-c" onclick="runCalc()" style="padding:5px 14px;font-size:12px;">🔄 計算</button>
   <button onclick="saveProject()" style="padding:5px 14px;font-size:12px;background:#1D9E75;border:none;border-radius:6px;cursor:pointer;color:#fff;font-weight:500;font-family:inherit;">💾 儲存專案</button>
 </div>
 
@@ -284,7 +287,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 <p class="note">＊ 總容積=基地×法定容積率×(1+獎勵率+移轉率)。台北市高度：5×(W/2+D)，住一10.5m、住二21m；新北市：1.5(W+D)+6。地下室每汽車位12坪、機車位1.9坪含通道。1坪=3.30579m²</p>
 <div class="nav-btns">
   <div></div>
-  <button class="btn-n" onclick="goStep(2)">下一步：總銷與成本 →</button>
+  <div style="display:flex;gap:8px;"><button class="btn-c" onclick="runCalc()">🔄 計算</button><button class="btn-n" onclick="goStep(2)">下一步：總銷與成本 →</button></div>
 </div>
 </div><!-- end pg1 -->
 
@@ -510,7 +513,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 
 <div class="nav-btns">
   <button class="btn-p" onclick="goStep(1)">← 上一步</button>
-  <button class="btn-n" onclick="goStep(3)">下一步：分回計算 →</button>
+  <div style="display:flex;gap:8px;"><button class="btn-c" onclick="runCalc()">🔄 計算</button><button class="btn-n" onclick="goStep(3)">下一步：分回計算 →</button></div>
 </div>
 </div><!-- end pg2 -->
 
@@ -547,7 +550,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 
 <div class="nav-btns">
   <button class="btn-p" onclick="goStep(2)">← 上一步</button>
-  <div></div>
+  <button class="btn-c" onclick="runCalc()">🔄 計算</button>
 </div>
 </div><!-- end pg3 -->
 <!-- ═══════════════════════════════════════════════════════ STEP 4 -->
@@ -578,7 +581,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 
 <div class="nav-btns">
   <button class="btn-p" onclick="goStep(3)">← 上一步</button>
-  <div></div>
+  <button class="btn-c" onclick="runCalc()">🔄 計算</button>
 </div>
 </div><!-- end pg4 -->
 </div><!-- end app -->
@@ -1315,13 +1318,47 @@ function buildRatioHTML(newReg, oldReg, indoorR){
 
 function renderS3(){
   const s2=ST.s2;
-  if(!s2){document.getElementById('s3-content').innerHTML='<div class="al al-i">請先完成步驟二的輸入，再查看分回計算。</div>';return;}
+  const box=document.getElementById('s3-content');
+  if(!s2){box.innerHTML='<div class="al al-i">請先完成步驟二的輸入，再查看分回計算。</div>';box.dataset.sig='';return;}
   const{res,pPing,pCar,blendedROE,blendedROA,totalBuilderNet,totalBuilderEquity,totalBuilderCost}=s2;
-  let html='';
+  let selfHTML='',commHTML='',urbB='',urbHd='',urbTop='',urbBot='';
+
+  // 骨架只在模式組合改變時重畫；談判與舊建物輸入框保持不動，避免輸入時焦點被洗掉
+  const sig=[!!res.self,!!res.urban,!!res.comm].join();
+  if(box.dataset.sig!==sig||(res.urban&&!document.getElementById('neg-ping'))){
+    const keep={};
+    ['neg-ping','neg-car','neg-cash','neg-orig','neg-indoor-ratio'].forEach(id=>{const e=document.getElementById(id);if(e)keep[id]=e.value;});
+    const kv=(id,d)=>keep[id]!==undefined?keep[id]:d;
+    box.innerHTML=`<div id="s3-self-wrap"></div>`+(res.urban?`
+    <div id="s3-urb-builder"></div>
+    <!-- 談判讓步輸入 -->
+    <div class="neg-box">
+      <div class="neg-hd">🤝 建商與地主談判讓步條件</div>
+      <div class="g4">
+        <div class="fd"><label>建商讓出坪數</label><input type="number" inputmode="decimal" id="neg-ping" value="${kv('neg-ping','')}" step="0.5" placeholder="0" onchange="renderS3()"/><div class="un">坪（從建商分回扣回）</div></div>
+        <div class="fd"><label>建商讓出車位</label><input type="number" inputmode="decimal" id="neg-car" value="${kv('neg-car','')}" step="1" placeholder="0" onchange="renderS3()"/><div class="un">位（從建商分回扣回）</div></div>
+        <div class="fd"><label>建商支付現金</label><input type="number" inputmode="decimal" id="neg-cash" value="${kv('neg-cash','')}" min="0" step="10" placeholder="0" onchange="renderS3()"/><div class="un">萬元（從建商淨利扣除）</div></div>
+      </div>
+    </div>
+    <div class="ret-party" style="margin-bottom:12px;">
+    <div class="ret-party-hd hd-owner" id="s3-urb-owner-hd"></div>
+    <div class="ret-party-bd">
+      <div id="s3-urb-owner-top"></div>
+      <div style="background:#f0f6ff;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
+        <div style="font-size:11px;font-weight:600;color:#185FA5;margin-bottom:8px;">地主舊建物資料</div>
+        <div class="g3">
+          <div class="fd"><label>地主原權狀坪</label><input type="number" inputmode="decimal" id="neg-orig" value="${kv('neg-orig',ST.existPing?fmt(ST.existPing,1).replace(/,/g,''):'')}" min="0" step="0.5" placeholder="（選填）" onchange="renderS3()"/><div class="un">坪（換回比用，預設帶入現有建物面積）</div></div>
+          <div class="fd"><label>舊建物室內面積比</label><input type="number" inputmode="decimal" id="neg-indoor-ratio" value="${kv('neg-indoor-ratio','0.9')}" min="0.5" max="1" step="0.01" onchange="renderS3()"/><div class="un">預設0.9（舊室內÷權狀）</div></div>
+        </div>
+      </div>
+      <div id="s3-urb-owner-bot"></div>
+    </div></div>`:'')+`<div id="s3-comm-wrap"></div>`;
+    box.dataset.sig=sig;
+  }
 
   if(res.self){
     const r=res.self;
-    html+=`<div class="ret-party" style="margin-bottom:12px;">
+    selfHTML+=`<div class="ret-party" style="margin-bottom:12px;">
     <div class="ret-party-hd hd-builder"><span>自地自建　建商分回</span><span class="tag" style="background:rgba(255,255,255,.2);color:#fff;">比例 ${fmt(s2.pSelf*100,0)}%</span></div>
     <div class="ret-party-bd">
       <div class="g4" style="margin-bottom:10px;">
@@ -1364,7 +1401,7 @@ function renderS3(){
     const hasNeg=negPing>0||negCar>0||negCash>0;
     const negLabel=hasNeg?'（談判後）':'';
 
-    html+=`<div class="ret-party" style="margin-bottom:0;">
+    urbB=`<div class="ret-party" style="margin-bottom:0;">
     <div class="ret-party-hd hd-builder"><span>都更合建　建商分回${negLabel?'<span class="neg-tag">含談判讓步</span>':''}</span><span class="tag" style="background:rgba(255,255,255,.2);color:#fff;">合建比 ${fmt(r.mergerR*100,0)}%</span></div>
     <div class="ret-party-bd">
       <div class="g4" style="margin-bottom:6px;">
@@ -1386,36 +1423,17 @@ function renderS3(){
         <div class="brow"><span class="bl" style="font-weight:600;">建商 ROE（談判後）</span><span class="bv-p">${bActualROE!=null?fmt(bActualROE*100,1)+'%':'—'}</span></div>
         <div class="brow"><span class="bl" style="font-weight:600;">建商 ROA（談判後）</span><span class="bv-p">${bActualROA!=null?fmt(bActualROA*100,1)+'%':'—'}</span></div>
       </div>`:''}
-    </div></div>
-
-    <!-- 談判讓步輸入 -->
-    <div class="neg-box">
-      <div class="neg-hd">🤝 建商與地主談判讓步條件</div>
-      <div class="g4">
-        <div class="fd"><label>建商讓出坪數</label><input type="number" id="neg-ping" value="${negPing||''}" max="${fmt(r.builderSaleP,1)}" step="0.5" placeholder="0" oninput="renderS3()"/><div class="un">坪（從建商分回扣回）</div></div>
-        <div class="fd"><label>建商讓出車位</label><input type="number" id="neg-car" value="${negCar||''}" step="1" placeholder="0" oninput="renderS3()"/><div class="un">位（從建商分回扣回）</div></div>
-        <div class="fd"><label>建商支付現金</label><input type="number" id="neg-cash" value="${negCash/WAN||''}" min="0" step="10" placeholder="0" oninput="renderS3()"/><div class="un">萬元（從建商淨利扣除）</div></div>
-
-      </div>
-    </div>
-
-    <div class="ret-party" style="margin-bottom:12px;">
-    <div class="ret-party-hd hd-owner"><span>都更合建　地主分回${negLabel?'<span class="neg-tag" style="background:rgba(255,255,255,.25);color:#fff;">含談判讓步</span>':''}</span><span class="tag" style="background:rgba(255,255,255,.2);color:#fff;">合建比地主 ${fmt((1-r.mergerR)*100,0)}%</span></div>
-    <div class="ret-party-bd">
+    </div></div>`;
+    urbHd=`<span>都更合建　地主分回${negLabel?'<span class="neg-tag" style="background:rgba(255,255,255,.25);color:#fff;">含談判讓步</span>':''}</span><span class="tag" style="background:rgba(255,255,255,.2);color:#fff;">合建比地主 ${fmt((1-r.mergerR)*100,0)}%</span>`;
+    urbTop=`
       <div class="g4" style="margin-bottom:6px;">
         <div class="hi blue"><p class="ml">地主分回銷坪${ownerOrigPing?`<br><span style="font-size:10px;color:#666;">原權狀 ${fmt(ownerOrigPing,1)}坪</span>`:''}</p><p class="mv">${fmt(hasNeg?oActualP:r.ownerSaleP,1)}坪</p><p class="ms">${hasNeg?`基本${fmt(r.ownerSaleP,1)}+讓步${fmt(negPing,1)}`:`總銷坪×${fmt((1-r.mergerR)*100,0)}%`}</p></div>
         <div class="hi blue"><p class="ml">地主分回車位</p><p class="mv">${hasNeg?oActualCar:r.ownerCar}位</p><p class="ms">${hasNeg?`基本${r.ownerCar}+讓步${negCar}`:`總車位×${fmt((1-r.mergerR)*100,0)}%`}</p></div>
         <div class="hi blue"><p class="ml">地主分回市值</p><p class="mv">${fmtW(hasNeg?oActualRev:r.ownerRev,0)}</p><p class="ms">${hasNeg?'含談判讓步':'地主部分'}</p></div>
         <div class="hi green2"><p class="ml">地主 ROE</p><p class="mv">${(hasNeg?oActualROE:r.ownerROE)!=null?fmt((hasNeg?oActualROE:r.ownerROE)*100,1)+'%':'—'}</p><p class="ms">增值÷舊建物價值</p></div>
       </div>
-      <div style="background:#f0f6ff;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
-        <div style="font-size:11px;font-weight:600;color:#185FA5;margin-bottom:8px;">地主舊建物資料</div>
-        <div class="g3">
-          <div class="fd"><label>地主原權狀坪</label><input type="number" id="neg-orig" value="${ownerOrigPing||''}" min="0" step="0.5" placeholder="${fmt(ST.existPing||0,1)||'（選填）'}" oninput="renderS3()"/><div class="un">坪（換回比用，預設帶入現有建物面積）</div></div>
-          <div class="fd"><label>舊建物室內面積比</label><input type="number" id="neg-indoor-ratio" value="${indoorRatio||0.9}" min="0.5" max="1" step="0.01" oninput="renderS3()"/><div class="un">預設0.9（舊室內÷權狀）</div></div>
-        </div>
-      </div>
-      <div class="brow"><span class="bl">舊有建物總價</span><span class="bv">${fmtW(r.oldBuildValue,0)}</span></div>
+`;
+    urbBot=`      <div class="brow"><span class="bl">舊有建物總價</span><span class="bv">${fmtW(r.oldBuildValue,0)}</span></div>
       ${hasNeg?`<div class="brow"><span class="bl">　基本分回市值</span><span class="bv">${fmtW(r.ownerRev,0)}</span></div>
       <div class="brow"><span class="bl">　讓坪市值</span><span class="bv-t">+${fmtW(negPing*pPingY+negCar*pCarY,1)}</span></div>
       <div class="brow"><span class="bl">　談判現金</span><span class="bv-t">+${fmtW(negCash,1)}</span></div>`:''}
@@ -1427,7 +1445,7 @@ function renderS3(){
       </div>
       ${buildRatioHTML(hasNeg?oActualP:r.ownerSaleP,ownerOrigPing,indoorRatio)}
       `:''}
-    </div></div>`;
+`;
 
     // Update blended ROE/ROA if negotiation active
     if(hasNeg){
@@ -1441,7 +1459,7 @@ function renderS3(){
 
   if(res.comm){
     const r=res.comm;
-    html+=`<div class="ret-party" style="margin-bottom:12px;">
+    commHTML+=`<div class="ret-party" style="margin-bottom:12px;">
     <div class="ret-party-hd hd-commission"><span>委託興建　建商（委託費）</span><span class="tag" style="background:rgba(255,255,255,.2);color:#fff;">比例 ${fmt(s2.pComm*100,0)}%｜委託費率 ${fmt(r.commRate*100,0)}%</span></div>
     <div class="ret-party-bd">
       <div class="brow"><span class="bl">委託費（建商收入）</span><span class="bv-t">${fmtW(r.commFee,0)}</span></div>
@@ -1461,7 +1479,13 @@ function renderS3(){
     </div></div>`;
   }
 
-  document.getElementById('s3-content').innerHTML=html;
+  const put=(id,h)=>{const e=document.getElementById(id);if(e)e.innerHTML=h;};
+  put('s3-self-wrap',selfHTML);put('s3-comm-wrap',commHTML);
+  if(res.urban){
+    put('s3-urb-builder',urbB);put('s3-urb-owner-hd',urbHd);put('s3-urb-owner-top',urbTop);put('s3-urb-owner-bot',urbBot);
+    const np=document.getElementById('neg-ping');if(np)np.max=(res.urban.builderSaleP||0).toFixed(1);
+    const no=document.getElementById('neg-orig');if(no)no.placeholder=ST.existPing?fmt(ST.existPing,1):'（選填）';
+  }
 
   // Blended
   s('s3-blend-roe',blendedROE!=null?fmt(blendedROE*100,1)+'%':'—');
@@ -1477,9 +1501,9 @@ function renderS3(){
 // ══════════════════════════════════════════════════════════════════
 // EVENT LISTENERS
 // ══════════════════════════════════════════════════════════════════
-document.getElementById('f-K').addEventListener('input',()=>syncKP('K'));
-document.getElementById('f-P').addEventListener('input',()=>syncKP('P'));
-document.getElementById('f-B').addEventListener('input',()=>syncKP('B'));
+document.getElementById('f-K').addEventListener('change',()=>syncKP('K'));
+document.getElementById('f-P').addEventListener('change',()=>syncKP('P'));
+document.getElementById('f-B').addEventListener('change',()=>syncKP('B'));
 document.getElementById('f-unit').addEventListener('change',function(){
   const u=this.value==='ping'?'坪':'m²';
   document.getElementById('area-lbl').textContent=u;
@@ -1500,7 +1524,7 @@ document.getElementById('f-zone').addEventListener('change',function(){
 });
 document.getElementById('f-city').addEventListener('change',function(){updateUI1();calcS1();});
 ['f-area','f-exist','f-far','f-bcr','f-bonus','f-transfer','f-units','f-parksize','f-motosize','f-excavate','f-W','f-D','f-h1','f-hs','f-ann','f-lp','f-mkt'].forEach(id=>{
-  const el=document.getElementById(id);if(el)el.addEventListener('input',calcS1);
+  const el=document.getElementById(id);if(el)el.addEventListener('change',calcS1);
 });
 
 // Step 2 listeners
@@ -1508,14 +1532,30 @@ document.getElementById('f-city').addEventListener('change',function(){updateUI1
  'sl-land','sl-broker','sl-ltax','sl-dtax','sl-const','sl-sir','sl-bir','sl-sltv','sl-bltv','sl-sp','sl-bp',
  'ub-broker','ub-units','ub-evict','ub-oldfloor','ub-rent','ub-p-legal','ub-p-bonus','ub-p-tdr','ub-const','ub-oldprice','ub-sir','ub-bir','ub-sltv','ub-bltv','ub-sp','ub-bp',
  'cm-rate','cm-const','cm-oldprice','cm-oldfloor','cm-bir','cm-bltv','cm-bp','ub-tdr-f1','ub-tdr-f2'].forEach(id=>{
-  const el=document.getElementById(id);if(el)el.addEventListener('input',calcS2);
+  const el=document.getElementById(id);if(el)el.addEventListener('change',calcS2);
 });
 ['s2-vat-on','s2-proptax-on'].forEach(id=>{
   const el=document.getElementById(id);if(el)el.addEventListener('change',calcS2);
 });
 ['s2-pself','s2-purb','s2-pcomm'].forEach(id=>{
-  const el=document.getElementById(id);if(el)el.addEventListener('input',()=>{checkPct();calcS2();});
+  const el=document.getElementById(id);if(el)el.addEventListener('change',()=>{checkPct();calcS2();});
 });
+
+// 確認後才計算：電腦按 Enter、手機按「完成／下一步」或離開欄位即觸發 change
+document.addEventListener('keydown',e=>{
+  const t=e.target;
+  if(e.key==='Enter'&&t.tagName==='INPUT'&&t.type!=='checkbox'&&t.type!=='file'){e.preventDefault();t.blur();}
+});
+// 計算按鈕：從步驟一依序重算到步驟四，確保各頁數字一致
+function runCalc(){
+  const a=document.activeElement;
+  if(a&&a.tagName==='INPUT')a.blur(); // 先提交正在編輯的欄位
+  checkPct();
+  calcS1();
+  updateS2Summary();calcS2();
+  updateS3Summary();renderS3();
+  updateS4Summary();calcS4();
+}
 
 // Init
 updateUI1();calcS1();checkPct();
@@ -1550,6 +1590,7 @@ const ALL_FIELD_IDS=[
 ];
 
 function saveProject(){
+  runCalc(); // 儲存前先依目前輸入重算
   const data={
     version:SAVE_VERSION,
     savedAt:new Date().toISOString(),
@@ -1604,6 +1645,7 @@ function loadProject(input){
       });
       // Restore owners
       if(Array.isArray(data.owners))owners=[...data.owners];
+      renderOwnerInputs();
       // Recalculate all
       syncKP('K');
       checkPct();
@@ -1630,10 +1672,18 @@ let owners=[]; // [{name,landPing,weight,buildPing,oldPrice}]
 
 function addOwner(){
   owners.push({name:'',landPing:0,weight:1,buildPing:0,oldPrice:0});
-  calcS4();
+  renderOwnerInputs();calcS4();
 }
 function deleteOwner(i){
-  owners.splice(i,1);calcS4();
+  owners.splice(i,1);renderOwnerInputs();calcS4();
+}
+// 欄位確認（change）時寫回資料並重算；只更新結果區，不重畫輸入框
+function setOwner(i,key,el){
+  if(!owners[i])return;
+  if(key==='name')owners[i].name=el.value;
+  else if(key==='weight')owners[i].weight=parseFloat(el.value)||1;
+  else owners[i][key]=parseFloat(el.value)||0;
+  calcS4();
 }
 
 function updateS4Summary(){
@@ -1643,6 +1693,35 @@ function updateS4Summary(){
   s('s4-ownerCar',u?fmt(u.ownerCar,2)+'位':'—');
   s('s4-basePing',ST.aPing>0?fmt(ST.aPing,1)+'坪':'—');
   s('s4-prices',s2?s2.pPing+'萬/坪　'+s2.pCar+'萬/位':'—');
+}
+
+// 畫出地主卡片（輸入框＋空的結果區）。只在新增／刪除／載入專案時呼叫
+function renderOwnerInputs(){
+  const el=document.getElementById('s4-list');
+  if(!el)return;
+  if(owners.length===0){
+    el.innerHTML='<div class="al al-i" style="margin-bottom:12px;">點擊「＋ 新增地主」開始輸入地主資料。</div>';
+    el.dataset.n='0';
+    return;
+  }
+  const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  el.innerHTML=owners.map((o,i)=>`<div class="bbox" style="margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:600;color:#333;" id="s4-title-${i}">${esc(o.name)||'地主 '+(i+1)}</div>
+      <button onclick="deleteOwner(${i})" style="font-size:11px;padding:3px 10px;background:#fee;border:1px solid #fcc;border-radius:5px;cursor:pointer;color:#993;font-family:inherit;">刪除</button>
+    </div>
+    <!-- Inputs -->
+    <div class="g4" style="margin-bottom:12px;">
+      <div class="fd"><label>地主名稱</label><input type="text" value="${esc(o.name)}" placeholder="（選填）" onchange="setOwner(${i},'name',this)"/></div>
+      <div class="fd"><label>土地坪數</label><input type="number" inputmode="decimal" value="${o.landPing||''}" min="0" step="0.1" placeholder="0" onchange="setOwner(${i},'landPing',this)"/><div class="un">坪</div></div>
+      <div class="fd"><label>加權係數</label><input type="number" inputmode="decimal" value="${o.weight!=null?o.weight:1}" min="0" max="5" step="0.1" placeholder="1" onchange="setOwner(${i},'weight',this)"/><div class="un">預設1，不影響車位</div></div>
+      <div class="fd"><label>建物權狀坪</label><input type="number" inputmode="decimal" value="${o.buildPing||''}" min="0" step="0.1" placeholder="0" onchange="setOwner(${i},'buildPing',this)"/><div class="un">坪（租金補貼用）</div></div>
+      <div class="fd"><label>舊建物估價</label><input type="number" inputmode="decimal" value="${o.oldPrice||''}" min="0" step="0.1" placeholder="0" onchange="setOwner(${i},'oldPrice',this)"/><div class="un">萬元／坪（ROE用）</div></div>
+    </div>
+    <!-- Results -->
+    <div id="s4-res-${i}"></div>
+    </div>`).join('');
+  el.dataset.n=String(owners.length);
 }
 
 function calcS4(){
@@ -1657,15 +1736,15 @@ function calcS4(){
 
   const el=document.getElementById('s4-list');
   if(!el)return;
+  // 卡片數與資料不符時才重畫輸入框（例如首次進入或載入專案）
+  if(el.dataset.n!==String(owners.length))renderOwnerInputs();
 
   if(owners.length===0){
-    el.innerHTML='<div class="al al-i" style="margin-bottom:12px;">點擊「＋ 新增地主」開始輸入地主資料。</div>';
     document.getElementById('s4-totals').style.display='none';
     return;
   }
 
   let totLand=0,totSale=0,totRent=0;
-  let html='';
 
   owners.forEach((o,i)=>{
     const ratio=basePing>0?o.landPing/basePing:0;
@@ -1679,21 +1758,10 @@ function calcS4(){
 
     const roeColor=roe==null?'#aaa':roe>=0?'#0F6E75':'#D85A30';
 
-    html+=`<div class="bbox" style="margin-bottom:12px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <div style="font-size:13px;font-weight:600;color:#333;">${o.name||'地主 '+(i+1)}</div>
-      <button onclick="deleteOwner(${i})" style="font-size:11px;padding:3px 10px;background:#fee;border:1px solid #fcc;border-radius:5px;cursor:pointer;color:#993;font-family:inherit;">刪除</button>
-    </div>
-    <!-- Inputs -->
-    <div class="g4" style="margin-bottom:12px;">
-      <div class="fd"><label>地主名稱</label><input type="text" value="${o.name}" placeholder="（選填）" oninput="owners[${i}].name=this.value;calcS4()"/></div>
-      <div class="fd"><label>土地坪數</label><input type="number" value="${o.landPing||''}" min="0" step="0.1" placeholder="0" oninput="owners[${i}].landPing=parseFloat(this.value)||0;calcS4()"/><div class="un">坪</div></div>
-      <div class="fd"><label>加權係數</label><input type="number" value="${o.weight!=null?o.weight:1}" min="0" max="5" step="0.1" placeholder="1" oninput="owners[${i}].weight=parseFloat(this.value)||1;calcS4()"/><div class="un">預設1，不影響車位</div></div>
-      <div class="fd"><label>建物權狀坪</label><input type="number" value="${o.buildPing||''}" min="0" step="0.1" placeholder="0" oninput="owners[${i}].buildPing=parseFloat(this.value)||0;calcS4()"/><div class="un">坪（租金補貼用）</div></div>
-      <div class="fd"><label>舊建物估價</label><input type="number" value="${o.oldPrice||''}" min="0" step="0.1" placeholder="0" oninput="owners[${i}].oldPrice=parseFloat(this.value)||0;calcS4()"/><div class="un">萬元／坪（ROE用）</div></div>
-    </div>
-    <!-- Results -->
-    <div style="background:#f7f7f7;border-radius:8px;padding:12px 14px;">
+    s('s4-title-'+i,o.name||'地主 '+(i+1));
+    const resEl=document.getElementById('s4-res-'+i);
+    if(!resEl)return;
+    resEl.innerHTML=`<div style="background:#f7f7f7;border-radius:8px;padding:12px 14px;">
       <div class="g4" style="margin-bottom:10px;">
         <div class="hi teal" style="min-width:0;">
           <p class="ml">土地佔比</p>
@@ -1723,11 +1791,8 @@ function calcS4(){
         <span class="bl" style="font-weight:600;">個人 ROE</span>
         <span style="font-family:monospace;font-size:16px;font-weight:700;color:${roeColor};">${roe!=null?fmt(roe*100,1)+'%':'—（未填估價）'}</span>
       </div>
-    </div>
     </div>`;
   });
-
-  el.innerHTML=html;
 
   // Totals
   const totEl=document.getElementById('s4-totals');
