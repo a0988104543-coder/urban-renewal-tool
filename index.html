@@ -91,6 +91,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 /* Step nav buttons */
 .nav-btns{display:flex;justify-content:space-between;align-items:center;margin-top:20px;}
 .btn-p{padding:9px 20px;background:#f0f0f0;color:#333;border:1px solid #ddd;border-radius:7px;cursor:pointer;font-size:13px;font-family:inherit;}
+.fd input.expr-err{border-color:#D85A30;background:#fff8f5;}
+.expr-hint{font-size:10.5px;color:#1D9E75;font-family:monospace;margin-top:1px;word-break:break-all;}
+.expr-hint.err{color:#D85A30;font-family:inherit;}
 .btn-c{padding:9px 18px;background:#fff;color:#1D9E75;border:1.5px solid #1D9E75;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;}
 .btn-c:active{background:#E1F5EE;}
 .btn-n{padding:9px 20px;background:#1D9E75;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;}
@@ -169,48 +172,48 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 <hr class="div"/>
 <p class="sec">面積與容積</p>
 <div class="g3">
-  <div class="fd"><label>基地面積</label><input type="number" id="f-area" placeholder="0" min="0" step="0.01"/><div class="un" id="area-lbl">坪</div></div>
+  <div class="fd"><label>基地面積</label><input type="text" data-expr id="f-area" placeholder="0" min="0" step="0.01"/><div class="un" id="area-lbl">坪</div></div>
   <div class="fd"><label>面積單位</label><select id="f-unit"><option value="ping">坪</option><option value="m2">平方公尺 (m²)</option></select></div>
-  <div class="fd"><label>現有建物面積（參考）</label><input type="number" id="f-exist" placeholder="0" min="0" step="0.01"/><div class="un" id="exist-lbl">坪</div></div>
+  <div class="fd"><label>現有建物面積（參考）</label><input type="text" data-expr id="f-exist" placeholder="0" min="0" step="0.01"/><div class="un" id="exist-lbl">坪</div></div>
 </div>
 <div class="g4" style="margin-top:10px;">
-  <div class="fd"><label>法定容積率</label><input type="number" id="f-far" placeholder="例：225" min="0" max="1000"/><div class="un">%</div></div>
-  <div class="fd"><label>建蔽率</label><input type="number" id="f-bcr" placeholder="例：45" min="0" max="100"/><div class="un">%</div></div>
-  <div class="fd"><label>容積獎勵率</label><input type="number" id="f-bonus" placeholder="例：30" min="0" max="200"/><div class="un">%（以法定容積為基準）</div></div>
-  <div class="fd"><label>容積移轉率</label><input type="number" id="f-transfer" placeholder="例：10" min="0" max="100"/><div class="un">%（以法定容積為基準）</div></div>
+  <div class="fd"><label>法定容積率</label><input type="text" data-expr id="f-far" placeholder="例：225" min="0" max="1000"/><div class="un">%</div></div>
+  <div class="fd"><label>建蔽率</label><input type="text" data-expr id="f-bcr" placeholder="例：45" min="0" max="100"/><div class="un">%</div></div>
+  <div class="fd"><label>容積獎勵率</label><input type="text" data-expr id="f-bonus" placeholder="例：30" min="0" max="200"/><div class="un">%（以法定容積為基準）</div></div>
+  <div class="fd"><label>容積移轉率</label><input type="text" data-expr id="f-transfer" placeholder="例：10" min="0" max="100"/><div class="un">%（以法定容積為基準）</div></div>
 </div>
 <hr class="div"/>
 <p class="sec">銷坪比 ／ 公設比 ／ 陽台比例</p>
 <div class="fx"><code>K = 總銷坪÷容積面積</code>　<code>P = 公設坪÷總銷坪</code>　<code>P=(K−1−B)÷K</code>　<code>K=(1+B)÷(1−P)</code>　B法規上限15%</div>
 <div class="g3" style="margin-top:10px;">
-  <div class="fd"><label>① 銷坪比 K（手動輸入）</label><input type="number" id="f-K" placeholder="例：1.50" min="1.01" max="3" step="0.01"/><div class="un">倍　藍框=自動推算</div><div class="hn ht" id="K-hint"></div></div>
-  <div class="fd"><label>② 公設比 P（手動輸入）</label><input type="number" id="f-P" placeholder="例：32" min="0" max="60" step="0.1"/><div class="un">%　藍框=自動推算</div><div class="hn ha" id="P-hint"></div></div>
-  <div class="fd"><label>③ 陽台比例 B</label><input type="number" id="f-B" value="5" min="0" max="30" step="0.1"/><div class="un">%（法規上限15%）</div><div class="hn" id="B-hint"></div></div>
+  <div class="fd"><label>① 銷坪比 K（手動輸入）</label><input type="text" data-expr id="f-K" placeholder="例：1.50" min="1.01" max="3" step="0.01"/><div class="un">倍　藍框=自動推算</div><div class="hn ht" id="K-hint"></div></div>
+  <div class="fd"><label>② 公設比 P（手動輸入）</label><input type="text" data-expr id="f-P" placeholder="例：32" min="0" max="60" step="0.1"/><div class="un">%　藍框=自動推算</div><div class="hn ha" id="P-hint"></div></div>
+  <div class="fd"><label>③ 陽台比例 B</label><input type="text" data-expr id="f-B" value="5" min="0" max="30" step="0.1"/><div class="un">%（法規上限15%）</div><div class="hn" id="B-hint"></div></div>
 </div>
 <hr class="div"/>
 <p class="sec">停車與地下室</p>
 <div class="g4">
-  <div class="fd"><label>預計戶數</label><input type="number" id="f-units" placeholder="例：20" min="1"/><div class="un">戶</div></div>
-  <div class="fd"><label>汽車位面積</label><input type="number" id="f-parksize" value="12" min="8" max="20" step="0.5"/><div class="un">坪／位（預設12坪）</div></div>
-  <div class="fd"><label>機車位面積</label><input type="number" id="f-motosize" value="1.9" min="1" max="5" step="0.1"/><div class="un">坪／位（預設1.9坪）</div></div>
-  <div class="fd"><label>地下室開挖率</label><input type="number" id="f-excavate" value="70" min="30" max="100"/><div class="un">%（預設70%）</div></div>
+  <div class="fd"><label>預計戶數</label><input type="text" data-expr id="f-units" placeholder="例：20" min="1"/><div class="un">戶</div></div>
+  <div class="fd"><label>汽車位面積</label><input type="text" data-expr id="f-parksize" value="12" min="8" max="20" step="0.5"/><div class="un">坪／位（預設12坪）</div></div>
+  <div class="fd"><label>機車位面積</label><input type="text" data-expr id="f-motosize" value="1.9" min="1" max="5" step="0.1"/><div class="un">坪／位（預設1.9坪）</div></div>
+  <div class="fd"><label>地下室開挖率</label><input type="text" data-expr id="f-excavate" value="70" min="30" max="100"/><div class="un">%（預設70%）</div></div>
 </div>
 <div class="fx" id="law-box" style="margin-top:8px;"></div>
 <hr class="div"/>
 <p class="sec">樓高限制</p>
 <div class="g4">
-  <div class="fd"><label>面前道路寬度 W</label><input type="number" id="f-W" placeholder="例：12" min="0" step="0.5"/><div class="un">公尺（m）</div></div>
-  <div class="fd"><label>退縮距離 D</label><input type="number" id="f-D" value="0" min="0" step="0.5"/><div class="un">公尺（無退縮填0）</div></div>
-  <div class="fd"><label>1樓層高 h₁</label><input type="number" id="f-h1" value="4.0" min="2.5" max="8" step="0.1"/><div class="un">公尺（預設4.0m）</div></div>
-  <div class="fd"><label>標準層高 hₛ</label><input type="number" id="f-hs" value="3.2" min="2.5" max="6" step="0.1"/><div class="un">公尺（預設3.2m）</div></div>
+  <div class="fd"><label>面前道路寬度 W</label><input type="text" data-expr id="f-W" placeholder="例：12" min="0" step="0.5"/><div class="un">公尺（m）</div></div>
+  <div class="fd"><label>退縮距離 D</label><input type="text" data-expr id="f-D" value="0" min="0" step="0.5"/><div class="un">公尺（無退縮填0）</div></div>
+  <div class="fd"><label>1樓層高 h₁</label><input type="text" data-expr id="f-h1" value="4.0" min="2.5" max="8" step="0.1"/><div class="un">公尺（預設4.0m）</div></div>
+  <div class="fd"><label>標準層高 hₛ</label><input type="text" data-expr id="f-hs" value="3.2" min="2.5" max="6" step="0.1"/><div class="un">公尺（預設3.2m）</div></div>
 </div>
 <div class="fx" id="hfb" style="margin-top:8px;"></div>
 <hr class="div"/>
 <p class="sec">地價資料（選填）</p>
 <div class="g3">
-  <div class="fd"><label>公告現值</label><input type="number" id="f-ann" placeholder="0" min="0"/><div class="un">元／平方公尺</div></div>
-  <div class="fd"><label>公告地價</label><input type="number" id="f-lp" placeholder="0" min="0"/><div class="un">元／平方公尺</div></div>
-  <div class="fd"><label>市場地價（估）</label><input type="number" id="f-mkt" placeholder="0" min="0"/><div class="un">元／平方公尺</div></div>
+  <div class="fd"><label>公告現值</label><input type="text" data-expr id="f-ann" placeholder="0" min="0"/><div class="un">元／平方公尺</div></div>
+  <div class="fd"><label>公告地價</label><input type="text" data-expr id="f-lp" placeholder="0" min="0"/><div class="un">元／平方公尺</div></div>
+  <div class="fd"><label>市場地價（估）</label><input type="text" data-expr id="f-mkt" placeholder="0" min="0"/><div class="un">元／平方公尺</div></div>
 </div>
 <hr class="div"/>
 <p class="sec">試算結果</p>
@@ -302,8 +305,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 
 <p class="sec">全案共用參數</p>
 <div class="g4">
-  <div class="fd"><label>每坪售價</label><input type="number" id="s2-pprice" placeholder="例：100" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
-  <div class="fd"><label>每汽車位售價</label><input type="number" id="s2-cprice" placeholder="例：300" min="0" step="1"/><div class="un">萬元／位</div></div>
+  <div class="fd"><label>每坪售價</label><input type="text" data-expr id="s2-pprice" placeholder="例：100" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
+  <div class="fd"><label>每汽車位售價</label><input type="text" data-expr id="s2-cprice" placeholder="例：300" min="0" step="1"/><div class="un">萬元／位</div></div>
   <div class="fd"><label>構造類別</label>
     <select id="s2-struct">
       <option value="RC">鋼筋混凝土（RC）</option>
@@ -311,17 +314,17 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
       <option value="SS">鋼骨構造（SS）</option>
     </select>
   </div>
-  <div class="fd"><label>銷管費率</label><input type="number" id="s2-sr" value="5.5" min="0" max="20" step="0.1"/><div class="un">%（總銷售額，預設5.5%）</div></div>
+  <div class="fd"><label>銷管費率</label><input type="text" data-expr id="s2-sr" value="5.5" min="0" max="20" step="0.1"/><div class="un">%（總銷售額，預設5.5%）</div></div>
 </div>
 <div class="g4" style="margin-top:10px;">
-  <div class="fd"><label>管銷費率</label><input type="number" id="s2-mr" value="5" min="0" max="20" step="0.1"/><div class="un">%（工程造價，預設5%）</div></div>
+  <div class="fd"><label>管銷費率</label><input type="text" data-expr id="s2-mr" value="5" min="0" max="20" step="0.1"/><div class="un">%（工程造價，預設5%）</div></div>
   <div class="fd">
     <div class="cb-row" style="margin-bottom:4px;">
       <input type="checkbox" id="s2-vat-on" checked onchange="calcS2()"/>
       <label for="s2-vat-on">營業稅（列入成本）</label>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
-      <input type="number" id="s2-vat" value="5" min="0" max="20" step="0.1" style="font-size:13px;padding:7px 10px;border-radius:6px;border:1px solid #ddd;width:80px;"/>
+      <input type="text" data-expr id="s2-vat" value="5" min="0" max="20" step="0.1" style="font-size:13px;padding:7px 10px;border-radius:6px;border:1px solid #ddd;width:80px;"/>
       <div class="un">%（建商分回銷售額）</div>
     </div>
   </div>
@@ -331,14 +334,14 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
       <label for="s2-proptax-on">物交稅（列入成本，5%固定）</label>
     </div>
   </div>
-  <div class="fd"><label>智慧建築費率</label><input type="number" id="s2-smart" value="6" min="6" max="8" step="0.5"/><div class="un">%（基地×法定容積×費率×公告現值×0.45，預設6%）</div></div>
+  <div class="fd"><label>智慧建築費率</label><input type="text" data-expr id="s2-smart" value="6" min="6" max="8" step="0.5"/><div class="un">%（基地×法定容積×費率×公告現值×0.45，預設6%）</div></div>
 </div>
 <hr class="div"/>
 <p class="sec">基地面積比例分配（合計需等於100%）</p>
 <div class="g3">
-  <div class="fd"><label>自地自建比例</label><input type="number" id="s2-pself" value="0" min="0" max="100" step="1"/><div class="un">%</div></div>
-  <div class="fd"><label>都更合建比例</label><input type="number" id="s2-purb" value="100" min="0" max="100" step="1"/><div class="un">%</div></div>
-  <div class="fd"><label>委託興建比例</label><input type="number" id="s2-pcomm" value="0" min="0" max="100" step="1"/><div class="un">%</div></div>
+  <div class="fd"><label>自地自建比例</label><input type="text" data-expr id="s2-pself" value="0" min="0" max="100" step="1"/><div class="un">%</div></div>
+  <div class="fd"><label>都更合建比例</label><input type="text" data-expr id="s2-purb" value="100" min="0" max="100" step="1"/><div class="un">%</div></div>
+  <div class="fd"><label>委託興建比例</label><input type="text" data-expr id="s2-pcomm" value="0" min="0" max="100" step="1"/><div class="un">%</div></div>
 </div>
 <div id="pct-check" style="margin-top:6px;"></div>
 
@@ -353,29 +356,29 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <div class="mcol-hd" style="color:#085041;">🏗 自地自建</div>
   <!-- 核心參數 -->
   <div style="background:#f0f9f5;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
-    <div class="fd" style="margin-bottom:8px;"><label>建造每坪造價</label><input type="number" id="sl-const" placeholder="例：8" min="0" step="0.1"/><div class="un">萬元／坪（全棟含地下室）</div></div>
-    <div class="fd"><label>購地單價</label><input type="number" id="sl-land" placeholder="例：30" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
+    <div class="fd" style="margin-bottom:8px;"><label>建造每坪造價</label><input type="text" data-expr id="sl-const" placeholder="例：8" min="0" step="0.1"/><div class="un">萬元／坪（全棟含地下室）</div></div>
+    <div class="fd"><label>購地單價</label><input type="text" data-expr id="sl-land" placeholder="例：30" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
   </div>
   <!-- 融資 -->
   <div style="background:#f0f6ff;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
     <div style="font-size:11px;font-weight:600;color:#378ADD;margin-bottom:8px;letter-spacing:.05em;">土地融資（基數：購地費用＋容移費用）</div>
     <div class="g3" style="margin-bottom:6px;">
-      <div class="fd"><label>土融利率</label><input type="number" id="sl-sir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
-      <div class="fd"><label>土融可貸成數</label><input type="number" id="sl-sltv" value="70" min="0" max="100" step="5"/><div class="un">%（預設70%）</div></div>
-      <div class="fd"><label>土融期間</label><input type="number" id="sl-sp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+      <div class="fd"><label>土融利率</label><input type="text" data-expr id="sl-sir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
+      <div class="fd"><label>土融可貸成數</label><input type="text" data-expr id="sl-sltv" value="70" min="0" max="100" step="5"/><div class="un">%（預設70%）</div></div>
+      <div class="fd"><label>土融期間</label><input type="text" data-expr id="sl-sp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
     </div>
     <div style="font-size:11px;font-weight:600;color:#378ADD;margin-bottom:8px;letter-spacing:.05em;">建築融資（基數：建造成本＋建築師費＋管理基金）</div>
     <div class="g3">
-      <div class="fd"><label>建融利率</label><input type="number" id="sl-bir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
-      <div class="fd"><label>建融可貸成數</label><input type="number" id="sl-bltv" value="50" min="0" max="100" step="5"/><div class="un">%（預設50%）</div></div>
-      <div class="fd"><label>建融期間</label><input type="number" id="sl-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+      <div class="fd"><label>建融利率</label><input type="text" data-expr id="sl-bir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
+      <div class="fd"><label>建融可貸成數</label><input type="text" data-expr id="sl-bltv" value="50" min="0" max="100" step="5"/><div class="un">%（預設50%）</div></div>
+      <div class="fd"><label>建融期間</label><input type="text" data-expr id="sl-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
     </div>
   </div>
   <!-- 購地相關費用 -->
   <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:6px;letter-spacing:.05em;">購地費用</div>
-  <div class="fd" style="margin-bottom:6px;"><label>仲介費率</label><input type="number" id="sl-broker" value="1" min="0" max="10" step="0.1"/><div class="un">%（購地成本）</div></div>
-  <div class="fd" style="margin-bottom:6px;"><label>土增稅率</label><input type="number" id="sl-ltax" value="0" min="0" max="50" step="0.1"/><div class="un">%（購地成本）</div></div>
-  <div class="fd"><label>契稅率</label><input type="number" id="sl-dtax" value="0" min="0" max="10" step="0.1"/><div class="un">%（購地成本）</div></div>
+  <div class="fd" style="margin-bottom:6px;"><label>仲介費率</label><input type="text" data-expr id="sl-broker" value="1" min="0" max="10" step="0.1"/><div class="un">%（購地成本）</div></div>
+  <div class="fd" style="margin-bottom:6px;"><label>土增稅率</label><input type="text" data-expr id="sl-ltax" value="0" min="0" max="50" step="0.1"/><div class="un">%（購地成本）</div></div>
+  <div class="fd"><label>契稅率</label><input type="text" data-expr id="sl-dtax" value="0" min="0" max="10" step="0.1"/><div class="un">%（購地成本）</div></div>
 </div>
 
 <!-- 都更合建 -->
@@ -383,24 +386,24 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <div class="mcol-hd" style="color:#0C447C;">🏘 都更合建</div>
   <!-- 核心參數 -->
   <div style="background:#EBF3FC;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
-    <div class="fd" style="margin-bottom:8px;"><label>建造每坪造價</label><input type="number" id="ub-const" placeholder="例：8" min="0" step="0.1"/><div class="un">萬元／坪（全棟含地下室）</div></div>
+    <div class="fd" style="margin-bottom:8px;"><label>建造每坪造價</label><input type="text" data-expr id="ub-const" placeholder="例：8" min="0" step="0.1"/><div class="un">萬元／坪（全棟含地下室）</div></div>
   </div>
   <!-- 合建比三參數 -->
   <div style="background:#EBF3FC;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
     <div style="font-size:11px;font-weight:600;color:#185FA5;margin-bottom:8px;letter-spacing:.05em;">合建比　地主各容積分配比例</div>
     <div class="fd" style="margin-bottom:6px;">
       <label>法定容積地主分配</label>
-      <input type="number" id="ub-p-legal" value="60" min="0" max="100" step="1"/>
+      <input type="text" data-expr id="ub-p-legal" value="60" min="0" max="100" step="1"/>
       <div class="un">%（預設60%）</div>
     </div>
     <div class="fd" style="margin-bottom:6px;" id="ub-p-bonus-wrap">
       <label>獎勵容積地主分配</label>
-      <input type="number" id="ub-p-bonus" value="60" min="0" max="100" step="1"/>
+      <input type="text" data-expr id="ub-p-bonus" value="60" min="0" max="100" step="1"/>
       <div class="un">%（預設60%，無獎勵容積時灰化）</div>
     </div>
     <div class="fd" style="margin-bottom:8px;" id="ub-p-tdr-wrap">
       <label>容移容積地主分配</label>
-      <input type="number" id="ub-p-tdr" value="10" min="0" max="100" step="1"/>
+      <input type="text" data-expr id="ub-p-tdr" value="10" min="0" max="100" step="1"/>
       <div class="un">%（預設10%，無容積移轉時灰化）</div>
     </div>
     <div style="background:#fff;border:1px solid #B5D4F4;border-radius:6px;padding:8px 10px;">
@@ -414,12 +417,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
     <div style="font-size:11px;font-weight:600;color:#2E7D32;margin-bottom:8px;letter-spacing:.05em;">容積移轉費用參數</div>
     <div class="fd" style="margin-bottom:6px;">
       <label>移入基地公告現值降比</label>
-      <input type="number" id="ub-tdr-f1" value="0.25" min="0" max="1" step="0.01"/>
+      <input type="text" data-expr id="ub-tdr-f1" value="0.25" min="0" max="1" step="0.01"/>
       <div class="un">預設0.25（Item 1 係數）</div>
     </div>
     <div class="fd">
       <label>估價降比</label>
-      <input type="number" id="ub-tdr-f2" value="0.85" min="0" max="1" step="0.01"/>
+      <input type="text" data-expr id="ub-tdr-f2" value="0.85" min="0" max="1" step="0.01"/>
       <div class="un">預設0.85（Item 2 售價折減係數，0.5固定）</div>
     </div>
   </div>
@@ -427,27 +430,27 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <div style="background:#f0f6ff;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
     <div style="font-size:11px;font-weight:600;color:#378ADD;margin-bottom:8px;letter-spacing:.05em;">土地融資（基數：容移費用）</div>
     <div class="g3" style="margin-bottom:6px;">
-      <div class="fd"><label>土融利率</label><input type="number" id="ub-sir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
-      <div class="fd"><label>土融可貸成數</label><input type="number" id="ub-sltv" value="70" min="0" max="100" step="5"/><div class="un">%（預設70%）</div></div>
-      <div class="fd"><label>土融期間</label><input type="number" id="ub-sp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+      <div class="fd"><label>土融利率</label><input type="text" data-expr id="ub-sir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
+      <div class="fd"><label>土融可貸成數</label><input type="text" data-expr id="ub-sltv" value="70" min="0" max="100" step="5"/><div class="un">%（預設70%）</div></div>
+      <div class="fd"><label>土融期間</label><input type="text" data-expr id="ub-sp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
     </div>
     <div style="font-size:11px;font-weight:600;color:#378ADD;margin-bottom:8px;letter-spacing:.05em;">建築融資（基數：建造成本＋建築師費＋管理基金）</div>
     <div class="g3">
-      <div class="fd"><label>建融利率</label><input type="number" id="ub-bir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
-      <div class="fd"><label>建融可貸成數</label><input type="number" id="ub-bltv" value="50" min="0" max="100" step="5"/><div class="un">%（預設50%）</div></div>
-      <div class="fd"><label>建融期間</label><input type="number" id="ub-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+      <div class="fd"><label>建融利率</label><input type="text" data-expr id="ub-bir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
+      <div class="fd"><label>建融可貸成數</label><input type="text" data-expr id="ub-bltv" value="50" min="0" max="100" step="5"/><div class="un">%（預設50%）</div></div>
+      <div class="fd"><label>建融期間</label><input type="text" data-expr id="ub-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
     </div>
   </div>
   <!-- 舊建物相關 -->
   <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:6px;letter-spacing:.05em;">舊建物與拆遷</div>
-  <div class="fd" style="margin-bottom:6px;"><label>舊建物戶數</label><input type="number" id="ub-units" value="0" min="0" step="1"/><div class="un">戶</div></div>
-  <div class="fd" style="margin-bottom:6px;"><label>拆遷補償／戶</label><input type="number" id="ub-evict" value="5" min="0" step="0.5"/><div class="un">萬元／戶</div></div>
-  <div class="fd" style="margin-bottom:6px;"><label>舊建物總樓地板面積</label><input type="number" id="ub-oldfloor" value="0" min="0"/><div class="un">坪</div></div>
-  <div class="fd" style="margin-bottom:6px;"><label>月租補貼費率</label><input type="number" id="ub-rent" value="0.1" min="0" step="0.01"/><div class="un">萬元／坪／月（舊樓×0.9×費率×期間×12）</div></div>
-  <div class="fd" style="margin-bottom:10px;"><label>舊建物估價（地主ROE用）</label><input type="number" id="ub-oldprice" placeholder="例：70" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
+  <div class="fd" style="margin-bottom:6px;"><label>舊建物戶數</label><input type="text" data-expr id="ub-units" value="0" min="0" step="1"/><div class="un">戶</div></div>
+  <div class="fd" style="margin-bottom:6px;"><label>拆遷補償／戶</label><input type="text" data-expr id="ub-evict" value="5" min="0" step="0.5"/><div class="un">萬元／戶</div></div>
+  <div class="fd" style="margin-bottom:6px;"><label>舊建物總樓地板面積</label><input type="text" data-expr id="ub-oldfloor" value="0" min="0"/><div class="un">坪</div></div>
+  <div class="fd" style="margin-bottom:6px;"><label>月租補貼費率</label><input type="text" data-expr id="ub-rent" value="0.1" min="0" step="0.01"/><div class="un">萬元／坪／月（舊樓×0.9×費率×期間×12）</div></div>
+  <div class="fd" style="margin-bottom:10px;"><label>舊建物估價（地主ROE用）</label><input type="text" data-expr id="ub-oldprice" placeholder="例：70" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
   <!-- 其他費用 -->
   <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:6px;letter-spacing:.05em;">其他費用</div>
-  <div class="fd"><label>中人費</label><input type="number" id="ub-broker" value="0" min="0"/><div class="un">萬元</div></div>
+  <div class="fd"><label>中人費</label><input type="text" data-expr id="ub-broker" value="0" min="0"/><div class="un">萬元</div></div>
 </div>
 
 <!-- 委託興建 -->
@@ -455,23 +458,23 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <div class="mcol-hd" style="color:#3C3489;">📋 委託興建</div>
   <!-- 核心參數 -->
   <div style="background:#EEEDFE;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
-    <div class="fd"><label>建造每坪造價</label><input type="number" id="cm-const" placeholder="例：8" min="0" step="0.1"/><div class="un">萬元／坪（全棟含地下室）</div></div>
+    <div class="fd"><label>建造每坪造價</label><input type="text" data-expr id="cm-const" placeholder="例：8" min="0" step="0.1"/><div class="un">萬元／坪（全棟含地下室）</div></div>
   </div>
   <!-- 融資 -->
   <div style="background:#f0f6ff;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
     <div style="font-size:11px;font-weight:600;color:#378ADD;margin-bottom:8px;letter-spacing:.05em;">建築融資（基數：建造成本＋建築師費＋管理基金）</div>
     <div class="g3">
-      <div class="fd"><label>建融利率</label><input type="number" id="cm-bir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
-      <div class="fd"><label>建融可貸成數</label><input type="number" id="cm-bltv" value="50" min="0" max="100" step="5"/><div class="un">%（預設50%）</div></div>
-      <div class="fd"><label>建融期間</label><input type="number" id="cm-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+      <div class="fd"><label>建融利率</label><input type="text" data-expr id="cm-bir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
+      <div class="fd"><label>建融可貸成數</label><input type="text" data-expr id="cm-bltv" value="50" min="0" max="100" step="5"/><div class="un">%（預設50%）</div></div>
+      <div class="fd"><label>建融期間</label><input type="text" data-expr id="cm-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
     </div>
   </div>
   <!-- 委託與舊建物 -->
   <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:6px;letter-spacing:.05em;">委託條件</div>
-  <div class="fd" style="margin-bottom:6px;"><label>委託費率</label><input type="number" id="cm-rate" value="10" min="1" max="30" step="0.5"/><div class="un">%（地主總銷售額，預設10%）</div></div>
+  <div class="fd" style="margin-bottom:6px;"><label>委託費率</label><input type="text" data-expr id="cm-rate" value="10" min="1" max="30" step="0.5"/><div class="un">%（地主總銷售額，預設10%）</div></div>
   <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:6px;margin-top:10px;letter-spacing:.05em;">舊建物（委建戶ROE用）</div>
-  <div class="fd" style="margin-bottom:6px;"><label>舊建物估價</label><input type="number" id="cm-oldprice" placeholder="例：70" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
-  <div class="fd"><label>舊建物面積</label><input type="number" id="cm-oldfloor" value="0" min="0"/><div class="un">坪</div></div>
+  <div class="fd" style="margin-bottom:6px;"><label>舊建物估價</label><input type="text" data-expr id="cm-oldprice" placeholder="例：70" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
+  <div class="fd"><label>舊建物面積</label><input type="text" data-expr id="cm-oldfloor" value="0" min="0"/><div class="un">坪</div></div>
 </div>
 
 </div><!-- end mode-cols -->
@@ -1335,9 +1338,9 @@ function renderS3(){
     <div class="neg-box">
       <div class="neg-hd">🤝 建商與地主談判讓步條件</div>
       <div class="g4">
-        <div class="fd"><label>建商讓出坪數</label><input type="number" inputmode="decimal" id="neg-ping" value="${kv('neg-ping','')}" step="0.5" placeholder="0" onchange="renderS3()"/><div class="un">坪（從建商分回扣回）</div></div>
-        <div class="fd"><label>建商讓出車位</label><input type="number" inputmode="decimal" id="neg-car" value="${kv('neg-car','')}" step="1" placeholder="0" onchange="renderS3()"/><div class="un">位（從建商分回扣回）</div></div>
-        <div class="fd"><label>建商支付現金</label><input type="number" inputmode="decimal" id="neg-cash" value="${kv('neg-cash','')}" min="0" step="10" placeholder="0" onchange="renderS3()"/><div class="un">萬元（從建商淨利扣除）</div></div>
+        <div class="fd"><label>建商讓出坪數</label><input type="text" data-expr id="neg-ping" value="${kv('neg-ping','')}" step="0.5" placeholder="0" onchange="renderS3()"/><div class="un">坪（從建商分回扣回）</div></div>
+        <div class="fd"><label>建商讓出車位</label><input type="text" data-expr id="neg-car" value="${kv('neg-car','')}" step="1" placeholder="0" onchange="renderS3()"/><div class="un">位（從建商分回扣回）</div></div>
+        <div class="fd"><label>建商支付現金</label><input type="text" data-expr id="neg-cash" value="${kv('neg-cash','')}" min="0" step="10" placeholder="0" onchange="renderS3()"/><div class="un">萬元（從建商淨利扣除）</div></div>
       </div>
     </div>
     <div class="ret-party" style="margin-bottom:12px;">
@@ -1347,8 +1350,8 @@ function renderS3(){
       <div style="background:#f0f6ff;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
         <div style="font-size:11px;font-weight:600;color:#185FA5;margin-bottom:8px;">地主舊建物資料</div>
         <div class="g3">
-          <div class="fd"><label>地主原權狀坪</label><input type="number" inputmode="decimal" id="neg-orig" value="${kv('neg-orig',ST.existPing?fmt(ST.existPing,1).replace(/,/g,''):'')}" min="0" step="0.5" placeholder="（選填）" onchange="renderS3()"/><div class="un">坪（換回比用，預設帶入現有建物面積）</div></div>
-          <div class="fd"><label>舊建物室內面積比</label><input type="number" inputmode="decimal" id="neg-indoor-ratio" value="${kv('neg-indoor-ratio','0.9')}" min="0.5" max="1" step="0.01" onchange="renderS3()"/><div class="un">預設0.9（舊室內÷權狀）</div></div>
+          <div class="fd"><label>地主原權狀坪</label><input type="text" data-expr id="neg-orig" value="${kv('neg-orig',ST.existPing?fmt(ST.existPing,1).replace(/,/g,''):'')}" min="0" step="0.5" placeholder="（選填）" onchange="renderS3()"/><div class="un">坪（換回比用，預設帶入現有建物面積）</div></div>
+          <div class="fd"><label>舊建物室內面積比</label><input type="text" data-expr id="neg-indoor-ratio" value="${kv('neg-indoor-ratio','0.9')}" min="0.5" max="1" step="0.01" onchange="renderS3()"/><div class="un">預設0.9（舊室內÷權狀）</div></div>
         </div>
       </div>
       <div id="s3-urb-owner-bot"></div>
@@ -1541,6 +1544,72 @@ document.getElementById('f-city').addEventListener('change',function(){updateUI1
   const el=document.getElementById(id);if(el)el.addEventListener('change',()=>{checkPct();calcS2();});
 });
 
+// ══════════════════════════════════════════════════════════════════
+// 算式輸入：欄位可直接輸入 547*225 或 =547*225，確認時換成結果
+// ══════════════════════════════════════════════════════════════════
+function normExpr(raw){
+  return String(raw)
+    .replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
+    .replace(/[．。]/g,'.').replace(/[＋]/g,'+').replace(/[－−–—]/g,'-')
+    .replace(/[×xX＊✕]/g,'*').replace(/[÷／]/g,'/')
+    .replace(/[（]/g,'(').replace(/[）]/g,')')
+    .replace(/[,，\s]/g,'').replace(/^[=＝]/,'');
+}
+// 安全的四則運算解析（不使用 eval）
+function evalExpr(src){
+  let i=0;
+  const peek=()=>src[i];
+  const num=()=>{const m=/^\d*\.?\d+(?:e[+-]?\d+)?/i.exec(src.slice(i));if(!m)throw 0;i+=m[0].length;return parseFloat(m[0]);};
+  const factor=()=>{
+    const c=peek();
+    if(c==='+'){i++;return factor();}
+    if(c==='-'){i++;return -factor();}
+    if(c==='('){i++;const v=expr();if(peek()!==')')throw 0;i++;return v;}
+    return num();
+  };
+  const term=()=>{let v=factor();while(peek()==='*'||peek()==='/'){const op=src[i++];const r=factor();v=op==='*'?v*r:v/r;}return v;};
+  const expr=()=>{let v=term();while(peek()==='+'||peek()==='-'){const op=src[i++];const r=term();v=op==='+'?v+r:v-r;}return v;};
+  const v=expr();
+  if(i!==src.length||!isFinite(v))throw 0;
+  return Number(v.toPrecision(12)); // 去掉 0.1+0.2 這類浮點尾數
+}
+function exprHint(el,text,isErr){
+  let h=el.nextElementSibling;
+  if(!h||!h.classList.contains('expr-hint')){
+    if(!text)return;
+    h=document.createElement('div');h.className='expr-hint';el.after(h);
+  }
+  if(!text){h.remove();return;}
+  h.textContent=text;h.classList.toggle('err',!!isErr);
+}
+// 捕獲階段先處理，欄位本身的計算事件拿到的就是換算後的結果
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(!el.matches||!el.matches('input[data-expr]'))return;
+  const raw=el.value.trim();
+  el.classList.remove('expr-err');
+  if(raw===''){exprHint(el,'');return;}
+  const src=normExpr(raw);
+  if(/^[+-]?\d*\.?\d+$/.test(src)){            // 單純數字（含全形、千分位）
+    if(src!==raw)el.value=String(parseFloat(src));
+    exprHint(el,'');return;
+  }
+  try{
+    const v=evalExpr(src);
+    el.value=String(v);
+    exprHint(el,'= '+src.replace(/\*/g,'×').replace(/\//g,'÷'));
+  }catch(_){
+    el.classList.add('expr-err');
+    exprHint(el,'⚠ 算式有誤，請修正',true);
+    e.stopPropagation(); // 算式錯誤時不觸發計算
+  }
+},true);
+// 開始修改時清掉舊的算式提示
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(el.matches&&el.matches('input[data-expr]')){el.classList.remove('expr-err');exprHint(el,'');}
+});
+
 // 確認後才計算：電腦按 Enter、手機按「完成／下一步」或離開欄位即觸發 change
 document.addEventListener('keydown',e=>{
   const t=e.target;
@@ -1713,10 +1782,10 @@ function renderOwnerInputs(){
     <!-- Inputs -->
     <div class="g4" style="margin-bottom:12px;">
       <div class="fd"><label>地主名稱</label><input type="text" value="${esc(o.name)}" placeholder="（選填）" onchange="setOwner(${i},'name',this)"/></div>
-      <div class="fd"><label>土地坪數</label><input type="number" inputmode="decimal" value="${o.landPing||''}" min="0" step="0.1" placeholder="0" onchange="setOwner(${i},'landPing',this)"/><div class="un">坪</div></div>
-      <div class="fd"><label>加權係數</label><input type="number" inputmode="decimal" value="${o.weight!=null?o.weight:1}" min="0" max="5" step="0.1" placeholder="1" onchange="setOwner(${i},'weight',this)"/><div class="un">預設1，不影響車位</div></div>
-      <div class="fd"><label>建物權狀坪</label><input type="number" inputmode="decimal" value="${o.buildPing||''}" min="0" step="0.1" placeholder="0" onchange="setOwner(${i},'buildPing',this)"/><div class="un">坪（租金補貼用）</div></div>
-      <div class="fd"><label>舊建物估價</label><input type="number" inputmode="decimal" value="${o.oldPrice||''}" min="0" step="0.1" placeholder="0" onchange="setOwner(${i},'oldPrice',this)"/><div class="un">萬元／坪（ROE用）</div></div>
+      <div class="fd"><label>土地坪數</label><input type="text" data-expr value="${o.landPing||''}" min="0" step="0.1" placeholder="0" onchange="setOwner(${i},'landPing',this)"/><div class="un">坪</div></div>
+      <div class="fd"><label>加權係數</label><input type="text" data-expr value="${o.weight!=null?o.weight:1}" min="0" max="5" step="0.1" placeholder="1" onchange="setOwner(${i},'weight',this)"/><div class="un">預設1，不影響車位</div></div>
+      <div class="fd"><label>建物權狀坪</label><input type="text" data-expr value="${o.buildPing||''}" min="0" step="0.1" placeholder="0" onchange="setOwner(${i},'buildPing',this)"/><div class="un">坪（租金補貼用）</div></div>
+      <div class="fd"><label>舊建物估價</label><input type="text" data-expr value="${o.oldPrice||''}" min="0" step="0.1" placeholder="0" onchange="setOwner(${i},'oldPrice',this)"/><div class="un">萬元／坪（ROE用）</div></div>
     </div>
     <!-- Results -->
     <div id="s4-res-${i}"></div>
