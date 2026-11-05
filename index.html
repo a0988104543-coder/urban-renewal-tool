@@ -199,6 +199,24 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <div class="fd"><label>機車位面積</label><input type="text" data-expr id="f-motosize" value="1.9" min="1" max="5" step="0.1"/><div class="un">坪／位（預設1.9坪）</div></div>
   <div class="fd"><label>地下室開挖率</label><input type="text" data-expr id="f-excavate" value="70" min="30" max="100"/><div class="un">%（預設70%）</div></div>
 </div>
+<div class="g4" id="park-tp-row" style="margin-top:10px;">
+  <div class="fd"><label>住宅用途（台北市停車標準）</label>
+    <select id="f-puse">
+      <option value="multi">第二類 多戶住宅（汽車120m²、機車100m²）</option>
+      <option value="single">第一類 獨立、雙併住宅（汽車100m²、機車200m²）</option>
+      <option value="other">第七類 其他（汽車150m²起累進、機車100m²）</option>
+    </select><div class="un">依使用分區預設，可改</div></div>
+  <div class="fd"><label>非住宅樓地板面積（選填）</label><input type="text" data-expr id="f-comm-m2" value="0"/><div class="un">m²（如一樓店面；自住宅面積扣除）</div></div>
+  <div class="fd"><label>非住宅用途類別</label>
+    <select id="f-comm-cls">
+      <option value="3">第三類 零售、飲食、醫療（汽車100m²起累進、機車200m²）</option>
+      <option value="4">第四類 餐飲、服務、娛樂（汽車100m²起累進、機車70m²）</option>
+      <option value="5">第五類 事務所、金融、公務（汽車100m²起累進、機車140m²）</option>
+      <option value="6">第六類 旅館（汽車100m²起累進、機車200m²）</option>
+      <option value="7">第七類 其他（汽車150m²起累進、機車100m²）</option>
+    </select></div>
+  <div class="fd"><label>&nbsp;</label><div class="cb-row" style="margin-top:6px;"><input type="checkbox" id="f-unitmin" checked/><label for="f-unitmin">每戶至少一位（實務假設，非§86-1規定）</label></div></div>
+</div>
 <div class="fx" id="law-box" style="margin-top:8px;"></div>
 <hr class="div"/>
 <p class="sec">樓高限制</p>
@@ -773,14 +791,39 @@ function goStep(n){
 // ══════════════════════════════════════════════════════════════════
 const ZONE_PRE={'住一':[80,60],'住二':[160,45],'住三':[225,45],'住四':[300,50],'商業':[560,80],'工業':[200,55]};
 const ZONE_ABS={'住一':10.5,'住二':21};
+// 臺北市土地使用分區管制自治條例§86-1（114/7/9）：依建築物用途；各用途分別累加後加總，零數設一輛
+// 計算面積不含室內停車、防空避難、騎樓、機械房、屋突等（本工具以「容積＋免計15%＋梯廳」為計算面積）
+const TP_PARK={
+  multi:{car:[[Infinity,120]],moto:100,name:'第二類 多戶住宅'},
+  single:{car:[[Infinity,100]],moto:200,name:'第一類 獨立、雙併住宅'},
+  3:{car:[[2000,100],[4000,150],[10000,200],[Infinity,250]],moto:200,name:'第三類'},
+  4:{car:[[4000,100],[10000,120],[Infinity,150]],moto:70,name:'第四類'},
+  5:{car:[[2000,100],[4000,150],[10000,200],[Infinity,250]],moto:140,name:'第五類'},
+  6:{car:[[2000,100],[4000,120],[10000,150],[Infinity,200]],moto:200,name:'第六類'},
+  7:{car:[[2000,150],[4000,200],[10000,250],[Infinity,300]],moto:100,name:'第七類 其他'}
+};
+TP_PARK.other=TP_PARK[7];
+function tpCarRaw(cls,m2){ // 累進：各級距「部分」分別計算
+  let raw=0,prev=0;
+  for(const[lim,per]of TP_PARK[cls].car){const part=Math.max(0,Math.min(m2,lim)-prev);raw+=part/per;prev=lim;if(m2<=lim)break;}
+  return raw;
+}
+function tpParking(baseM2,units){
+  const commM2=Math.min(Math.max(0,gf('f-comm-m2')),baseM2),resM2=baseM2-commM2;
+  const use=gv('f-puse')||'multi',cls=gv('f-comm-cls')||'3';
+  const carRaw=tpCarRaw(use,resM2)+(commM2>0?tpCarRaw(cls,commM2):0);
+  const motoRaw=resM2/TP_PARK[use].moto+(commM2>0?commM2/TP_PARK[cls].moto:0);
+  const um=document.getElementById('f-unitmin')?.checked?(units||0):0;
+  return{car:Math.max(Math.ceil(carRaw-1e-9),um),moto:Math.max(Math.ceil(motoRaw-1e-9),um),carRaw,motoRaw,resM2,commM2,use,cls,um};
+}
 const CAR_LAW={
-  taipei:{txt:'汽車：每滿<strong>150m²</strong>一位，每戶至少一位',calc:(m2,u)=>Math.max(Math.ceil(m2/150),u||0)},
+  taipei:{txt:'汽車：依§86-1建築物用途計算',calc:(m2,u)=>tpParking(m2*1.15*100/95,u).car},
   newtaipei:{txt:'汽車：≤500m²免設；501–3000m²每<strong>150m²</strong>；>3000m²每<strong>200m²</strong>',
     calc:(m2,u)=>{let f=0;if(m2>500&&m2<=3000)f=Math.ceil((m2-500)/150);else if(m2>3000)f=Math.ceil(2500/150)+Math.ceil((m2-3000)/200);return Math.max(f,0);}},
   other:{txt:'汽車：每滿<strong>150m²</strong>一位',calc:(m2,u)=>Math.ceil(m2/150)}
 };
 const MOTO_LAW={
-  taipei:{txt:'機車：每滿<strong>100m²</strong>一位，每戶至少一位',calc:(m2,u)=>Math.max(Math.ceil(m2/100),u||0)},
+  taipei:{txt:'機車：依§86-1建築物用途計算',calc:(m2,u)=>tpParking(m2*1.15*100/95,u).moto},
   newtaipei:{txt:'機車：每滿<strong>150m²</strong>一位，每戶至少一位',calc:(m2,u)=>Math.max(Math.ceil(m2/150),u||0)},
   other:{txt:'機車：每滿<strong>150m²</strong>一位',calc:(m2,u)=>Math.ceil(m2/150)}
 };
@@ -832,6 +875,7 @@ function calcS1(){
   const saleM2=K?totalM2*K:null,balM2=totalM2*B,comM2=P&&saleM2?saleM2*P:null;
 
   const legalCar=CAR_LAW[city].calc(totalM2,units),legalMoto=MOTO_LAW[city].calc(totalM2,units);
+  ST.parkTP=city==='taipei'?tpParking(totalM2*1.15*100/95,units):null;
   const carSzM2=carSzP*P2M,motoSzM2=motoSzP*P2M;
   const b1M2=aM2*excav,b1P=b1M2*M2P;
   const legalNeedP=legalCar*carSzP+legalMoto*motoSzP,legalNeedM2=legalCar*carSzM2+legalMoto*motoSzM2;
@@ -955,7 +999,15 @@ function clearS1(){
 function updateUI1(){
   const city=gv('f-city'),zone=gv('f-zone');
   const lb=document.getElementById('law-box');
-  if(lb)lb.innerHTML=`${CAR_LAW[city].txt}　｜　${MOTO_LAW[city].txt}`;
+  const tr=document.getElementById('park-tp-row');if(tr)tr.style.display=city==='taipei'?'':'none';
+  const pk=ST.parkTP;
+  if(lb&&city==='taipei'&&pk){
+    const base=pk.resM2+pk.commM2;
+    lb.innerHTML=`<code>台北市土管§86-1</code> 計算面積 ${fmt(base,2)}m²（容積＋免計15%＋梯廳；不含停車、屋突、機械房等）<br/>`
+      +`住宅 ${TP_PARK[pk.use].name} ${fmt(pk.resM2,2)}m²${pk.commM2>0?`＋非住宅 ${TP_PARK[pk.cls].name} ${fmt(pk.commM2,2)}m²`:''}`
+      +` → 汽車 ${fmt(pk.carRaw,2)} → <strong>${Math.ceil(pk.carRaw-1e-9)}位</strong>、機車 ${fmt(pk.motoRaw,2)} → <strong>${Math.ceil(pk.motoRaw-1e-9)}位</strong>（零數設一輛）`
+      +(pk.um>0?`；每戶至少一位（${pk.um}戶）`:'');
+  }else if(lb)lb.innerHTML=`${CAR_LAW[city].txt}　｜　${MOTO_LAW[city].txt}`;
   const hb=document.getElementById('hfb');
   if(hb){
     const abs=city==='taipei'&&zone&&ZONE_ABS[zone]?`，${zone}絕對限高<strong>${ZONE_ABS[zone]}m</strong>`:'';
@@ -1675,6 +1727,8 @@ document.getElementById('f-zone').addEventListener('change',function(){
     farEl.value=p[0];farEl.classList.add('auto');
     bcrEl.value=p[1];bcrEl.classList.add('auto');
   }
+  const pu=document.getElementById('f-puse');
+  if(pu&&this.value)pu.value=this.value==='工業'?'other':'multi'; // 住宅區、商業區預設多戶住宅
   updateUI1();calcS1();
 });
 // Remove auto hint when user manually edits
@@ -1682,7 +1736,7 @@ document.getElementById('f-zone').addEventListener('change',function(){
   document.getElementById(id)?.addEventListener('input',function(){this.classList.remove('auto');});
 });
 document.getElementById('f-city').addEventListener('change',function(){updateUI1();calcS1();});
-['f-area','f-exist','f-far','f-bcr','f-bonus','f-transfer','f-units','f-parksize','f-motosize','f-excavate','f-W','f-D','f-h1','f-hs','f-ann','f-lp','f-mkt'].forEach(id=>{
+['f-area','f-exist','f-far','f-bcr','f-bonus','f-transfer','f-units','f-parksize','f-motosize','f-excavate','f-W','f-D','f-h1','f-hs','f-ann','f-lp','f-mkt','f-puse','f-comm-m2','f-comm-cls','f-unitmin'].forEach(id=>{
   const el=document.getElementById(id);if(el)el.addEventListener('change',calcS1);
 });
 
@@ -1797,6 +1851,7 @@ const ALL_FIELD_IDS=[
   'f-far','f-bcr','f-bonus','f-transfer',
   'f-K','f-P','f-B',
   'f-units','f-parksize','f-motosize','f-excavate',
+  'f-puse','f-comm-m2','f-comm-cls',
   'f-W','f-D','f-h1','f-hs',
   'f-ann','f-lp','f-mkt',
   // Step 2 shared
@@ -1829,7 +1884,7 @@ function saveProject(){
     const el=document.getElementById(id);
     if(el)data.inputs[id]=el.value;
   });
-  ['s2-vat-on','s2-proptax-on','s2-use-g5'].forEach(id=>{
+  ['s2-vat-on','s2-proptax-on','s2-use-g5','f-unitmin'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)data.inputs[id]=el.checked?'1':'0';
   });
@@ -1865,7 +1920,7 @@ function loadProject(input){
         if(el)el.dispatchEvent(new Event('change'));
       });
       // If far/bcr were saved as non-empty, restore them over the zone preset
-      ['f-far','f-bcr'].forEach(id=>{
+      ['f-far','f-bcr','f-puse'].forEach(id=>{
         const saved=data.inputs[id];
         const el=document.getElementById(id);
         if(el&&saved!==undefined&&saved!==''){el.value=saved;el.classList.remove('auto');}
