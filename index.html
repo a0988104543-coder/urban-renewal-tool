@@ -358,7 +358,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 <div class="cb-row" style="margin-top:10px;">
   <input type="checkbox" id="s2-use-g5" onchange="calcG5();calcS2();"/>
   <label for="s2-use-g5">綠建築／智慧建築等保證金與維護費，改用「⑤ 保證金與基金」頁的計算結果</label>
-  <span class="un">（預設關閉；打開後改列⑤頁目前方案的各項保證金＋綠建築維護費，智慧建築費率欄位不再使用）</span>
+  <span class="un">（預設關閉；打開後成本改列⑤頁目前方案的保證金資金成本＋綠建築維護費，保證金本金可退、不計成本但列入自有資金；智慧建築費率欄位不再使用）</span>
 </div>
 <hr class="div"/>
 <p class="sec">基地面積比例分配（合計需等於100%）</p>
@@ -762,7 +762,7 @@ const m2s=m2=>fmt(m2)+'m²';
 const s=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
 const pw=(id,w)=>{const e=document.getElementById(id);if(e)e.style.width=Math.max(0,Math.min(100,w||0))+'%';};
 const gv=id=>{const e=document.getElementById(id);return e?e.value:'';};
-const gf=id=>parseFloat(document.getElementById(id)?.value)||0;
+const gf=id=>parseFloat(String(document.getElementById(id)?.value??'').replace(/[,，\s]/g,''))||0; // 容許千分位
 
 // Shared state
 const ST={
@@ -921,7 +921,7 @@ function calcS1(){
   const existPing=unit==='ping'?existRaw:existRaw*M2P;
   ST.existPing=existPing;
   const ubOld=document.getElementById('ub-oldfloor');
-  if(ubOld&&existPing>0)ubOld.value=fmt(existPing,2);
+  if(ubOld&&existPing>0)ubOld.value=existPing.toFixed(2); // 不加千分位，避免 parseFloat 讀成 1
 
   // Display
   s('r-total',ping(totalM2));s('r-total-s',m2s(totalM2));
@@ -1118,12 +1118,18 @@ function calcS2(){
   // 容積移轉費用計算 (constPerPing: 元/坪)
   function calcTDR(c,constPerPing){
     if(!xfrR||xfrR<=0)return{tdr1:0,tdr2:0,tdrTotal:0};
-    const tdr1=c.aM*xfrR*0.5*annPrice*tdrF1;
+    const tdr1=c.aM*far*xfrR*0.5*annPrice*tdrF1; // 移入容積（基準容積×容移率）×0.5×公告現值×0.25
     const tdr2=(pPingYuan*tdrF2-constPerPing)*c.aP*far*xfrR*K*0.5;
     const tdrTotal=Math.max(0,tdr1)+Math.max(0,tdr2);
     return{tdr1:Math.max(0,tdr1),tdr2:Math.max(0,tdr2),tdrTotal};
   }
   // 三項新稅費
+  // 連動⑤頁時，標章保證金（可退）依基地比例列入自有資金
+  function depCash(c){
+    const g5=ST.g5;
+    if(!(document.getElementById('s2-use-g5')?.checked&&g5&&g5.ok))return 0;
+    return g5.depositTotal*(ST.aM2>0?c.aM/ST.aM2:1);
+  }
   function calcNewTaxes(c, builderSalesRev, legalCostWan, fundY){
     const propTax = builderSalesRev * 0.05;                  // 物交稅 5%
     const greenMaint = fundY * 0.5;                           // 綠建築維護費 = 管理基金×0.5
@@ -1133,9 +1139,10 @@ function calcS2(){
     // 開關打開時，改用第⑤頁的保證金與維護費（依本模式基地比例分攤）
     const g5=ST.g5;
     if(document.getElementById('s2-use-g5')?.checked && g5 && g5.ok){
+      // 保證金可退：成本只列資金成本＋維護費；保證金本身另列為自有資金需求（不計入成本）
       const p=ST.aM2>0?c.aM/ST.aM2:1;
-      const dep=g5.depositTotal*p, maint=g5.maint*p;
-      return{propTax, greenMaint:maint, greenDeposit:dep, greenTotal:maint+dep, smartDeposit:0, fromG5:true};
+      const fin=(g5.finCost||0)*p, maint=g5.maint*p;
+      return{propTax, greenMaint:maint, greenDeposit:fin, greenTotal:maint+fin, smartDeposit:0, fromG5:true};
     }
     return{propTax, greenMaint, greenDeposit, greenTotal, smartDeposit};
   }
@@ -1171,8 +1178,9 @@ function calcS2(){
     const sl_propTax=propTaxOn?_sl_propTax:0;
     const totalCost=landCost+brokerFee+landTax+deedTax+constCost+c.archY+c.fundY+salesCost+mgmtCost+consultFee+tdrCost+soilInt+buildInt+sl_propTax+sl_greenTotal+sl_smartDeposit;
     const netProfit=salesRev-totalCost;
-    const equity=totalCost-soilLoan-buildLoan;
-    res.self={...c,landCost,brokerFee,landTax,deedTax,constCost,consultFee,tdrCost,sl_tdr1,sl_tdr2,salesRev,salesCost,mgmtCost,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,propTax:sl_propTax,greenMaint:sl_greenMaint,greenDeposit:sl_greenDeposit,greenTotal:sl_greenTotal,smartDeposit:sl_smartDeposit,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,vatY:0,
+    const sl_depCash=depCash(c);
+    const equity=totalCost-soilLoan-buildLoan+sl_depCash;
+    res.self={...c,depCash:sl_depCash,landCost,brokerFee,landTax,deedTax,constCost,consultFee,tdrCost,sl_tdr1,sl_tdr2,salesRev,salesCost,mgmtCost,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,propTax:sl_propTax,greenMaint:sl_greenMaint,greenDeposit:sl_greenDeposit,greenTotal:sl_greenTotal,smartDeposit:sl_smartDeposit,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,vatY:0,
       _sl_land:gf('sl-land'),_sl_const:gf('sl-const'),_sl_sir:soilIR*100,_sl_bir:buildIR*100,_sl_sltv:soilLTV*100,_sl_bltv:buildLTV*100,_sl_sp:soilPeriod,_sl_bp:buildPeriod};
   }
 
@@ -1233,13 +1241,14 @@ function calcS2(){
     const vatY=vatOn?_vatY_raw:0;
     const totalCost=brokerY+evictComp+rentSub+constCost+c.archY+c.fundY+salesCost+mgmtCost+consultFee+trustFee+tdrCost+soilInt+buildInt+vatY+ub_propTax+ub_greenTotal+ub_smartDeposit;
     const netProfit=builderRev-totalCost;
-    const equity=totalCost-soilLoan-buildLoan;
+    const ub_depCash=depCash(c);
+    const equity=totalCost-soilLoan-buildLoan+ub_depCash;
 
     const oldBuildValue=oldPricePerPing*oldFloorPing;
     const ownerNet=ownerRev-oldBuildValue;
     const ownerROE=oldBuildValue>0?ownerNet/oldBuildValue:null;
 
-    res.urban={...c,brokerY,evictComp,rentSub,constCost,consultFee,trustFee,tdrCost,ub_tdr1,ub_tdr2,mgmtCost,builderRev,builderSaleP,builderCar,ownerRev,ownerSaleP,ownerCar,salesCost,vatY,propTax:ub_propTax,greenMaint:ub_greenMaint,greenDeposit:ub_greenDeposit,greenTotal:ub_greenTotal,smartDeposit:ub_smartDeposit,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,mergerR,oldBuildValue,ownerNet,ownerROE,
+    res.urban={...c,depCash:ub_depCash,brokerY,evictComp,rentSub,constCost,consultFee,trustFee,tdrCost,ub_tdr1,ub_tdr2,mgmtCost,builderRev,builderSaleP,builderCar,ownerRev,ownerSaleP,ownerCar,salesCost,vatY,propTax:ub_propTax,greenMaint:ub_greenMaint,greenDeposit:ub_greenDeposit,greenTotal:ub_greenTotal,smartDeposit:ub_smartDeposit,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,mergerR,oldBuildValue,ownerNet,ownerROE,
       _ub_const:gf('ub-const'),_ub_sir:soilIR*100,_ub_bir:buildIR*100,_ub_sltv:soilLTV*100,_ub_bltv:buildLTV*100,_ub_sp:soilPeriod,_ub_bp:buildPeriod};
   }
 
@@ -1269,10 +1278,11 @@ function calcS2(){
     const ownerTotalPay=ownerSelfCost+commFee;
     const ownerNet=totalSalesRev-ownerTotalPay;
     const oldBuildValue=oldPricePerPing*oldFloorPing;
-    const ownerInvest=oldBuildValue+commFee+ownerSelfCost;
+    const cm_depCash=depCash(c); // 委建：保證金由地主自付，列入地主投入
+    const ownerInvest=oldBuildValue+commFee+ownerSelfCost+cm_depCash;
     const ownerROE=ownerInvest>0?ownerNet/ownerInvest:null;
 
-    res.comm={...c,commRate,commFee,tdrCost,cm_tdr1,cm_tdr2,totalSalesRev,constCost,mgmtCost,salesCost,propTax:cm_propTax,greenMaint:cm_greenMaint,greenDeposit:cm_greenDeposit,greenTotal:cm_greenTotal,smartDeposit:cm_smartDeposit,buildBase,buildLoan,buildInt,ownerSelfCost,ownerTotalPay,ownerNet,oldBuildValue,ownerInvest,ownerROE,
+    res.comm={...c,depCash:cm_depCash,commRate,commFee,tdrCost,cm_tdr1,cm_tdr2,totalSalesRev,constCost,mgmtCost,salesCost,propTax:cm_propTax,greenMaint:cm_greenMaint,greenDeposit:cm_greenDeposit,greenTotal:cm_greenTotal,smartDeposit:cm_smartDeposit,buildBase,buildLoan,buildInt,ownerSelfCost,ownerTotalPay,ownerNet,oldBuildValue,ownerInvest,ownerROE,
       _cm_const:gf('cm-const'),_cm_bir:buildIR*100,_cm_bltv:buildLTV*100,_cm_bp:buildPeriod};
   }
 
@@ -1305,7 +1315,7 @@ function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
 
   const useG5=!!(document.getElementById('s2-use-g5')?.checked&&ST.g5&&ST.g5.ok);
   const greenDet=r=>useG5
-    ?`⑤頁「${ST.g5.label}」：保證金${fmtW(r.greenDeposit,1)}＋維護費${fmtW(r.greenMaint,1)}（依基地比例分攤）`
+    ?`⑤頁「${ST.g5.label}」：保證金資金成本${fmtW(r.greenDeposit,1)}（${ST.g5.pay==='cash'?'現金':'銀行保證'}）＋維護費${fmtW(r.greenMaint,1)}（依基地比例分攤）`
     :`維護費${fmtW(r.greenMaint,1)}（管理基金×0.5）+ 保證金${fmtW(r.greenDeposit,1)}（法定造價×5%）`;
   const smartDet=r=>useG5?'已併入上一列（⑤頁）'
     :`基地${fmt(r.aM,0)}m²×法定容積×${fmt(gf('s2-smart'),1)}%×公告現值×0.7`;
@@ -1325,7 +1335,7 @@ function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
     ['　租金補貼',null,r=>r.rentSub,null,
       null,r=>`舊樓地板${gf('ub-oldfloor')}坪 × 0.9 × ${gf('ub-rent')}萬/月 × ${gf('ub-bp')}年`,null],
     ['　容積移轉費用',r=>r.tdrCost,r=>r.tdrCost,r=>r.tdrCost,
-      r=>`Item1(基地×容移×0.5×公告現值×0.25) ${fmtW(r.sl_tdr1,1)} + Item2(售價×0.85-造價)×基地坪×容積率×容移×0.5 ${fmtW(r.sl_tdr2,1)}`,
+      r=>`Item1(基地×容積率×容移×0.5×公告現值×0.25) ${fmtW(r.sl_tdr1,1)} + Item2(售價×0.85-造價)×基地坪×容積率×容移×0.5 ${fmtW(r.sl_tdr2,1)}`,
       r=>`Item1 ${fmtW(r.ub_tdr1,1)} + Item2 ${fmtW(r.ub_tdr2,1)}`,
       r=>`Item1 ${fmtW(r.cm_tdr1,1)} + Item2 ${fmtW(r.cm_tdr2,1)}`],
     ['工程造價'],
@@ -1369,10 +1379,12 @@ function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
       r=>`建商總銷${fmtW(r.salesRev,0)} × 5%`,
       r=>`建商分回${fmtW(r.builderRev,0)} × 5%`,
       r=>`地主總銷${fmtW(r.totalSalesRev,0)} × 5%`],
-    [useG5?'　標章保證金＋綠建築維護費（⑤頁）':'　綠建築費用',r=>r.greenTotal,r=>r.greenTotal,r=>r.greenTotal,
+    [useG5?'　標章保證金資金成本＋綠建築維護費（⑤頁）':'　綠建築費用',r=>r.greenTotal,r=>r.greenTotal,r=>r.greenTotal,
       r=>greenDet(r),r=>greenDet(r),r=>greenDet(r)],
     ['　智慧建築保證金',r=>r.smartDeposit,r=>r.smartDeposit,r=>r.smartDeposit,
       r=>smartDet(r),r=>smartDet(r),r=>smartDet(r)],
+    ...(useG5?[['　（參考）標章保證金本金：可退，不計成本，列入自有資金',r=>r.depCash,r=>r.depCash,r=>r.depCash,
+      r=>'⑤頁可退還保證金 × 基地比例',r=>'⑤頁可退還保證金 × 基地比例',r=>'由地主自付，列入地主投入']]:[]),
     ['建商收入'],
     ['　建商收入',r=>r.salesRev,r=>r.builderRev,'委託費: '+fmtW(res?.comm?.commFee),
       r=>`${fmt(r.sP,1)}坪 × ${gf('s2-pprice')}萬 + ${r.car}位 × ${gf('s2-cprice')}萬`,
@@ -1382,8 +1394,8 @@ function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
     ['建商成本合計',r=>r.totalCost,r=>r.totalCost,null],
     ['建商毛利',r=>r.netProfit,r=>r.netProfit,null],
     ['建商自有資金',r=>r.equity,r=>r.equity,null,
-      r=>`成本${fmtW(r.totalCost,0)}-土融${fmtW(r.soilLoan,0)}-建融${fmtW(r.buildLoan,0)}`,
-      r=>`成本${fmtW(r.totalCost,0)}-土融${fmtW(r.soilLoan,0)}-建融${fmtW(r.buildLoan,0)}`,null],
+      r=>`成本${fmtW(r.totalCost,0)}-土融${fmtW(r.soilLoan,0)}-建融${fmtW(r.buildLoan,0)}${r.depCash?'+保證金'+fmtW(r.depCash,0):''}`,
+      r=>`成本${fmtW(r.totalCost,0)}-土融${fmtW(r.soilLoan,0)}-建融${fmtW(r.buildLoan,0)}${r.depCash?'+保證金'+fmtW(r.depCash,0):''}`,null],
     ['roe'],
     ['建商ROE',r=>r.roe?fmt(r.roe*100,1)+'%':null,r=>r.roe?fmt(r.roe*100,1)+'%':null,res?.comm?'—（顯示委託費）':null,
       r=>r.roe?`毛利${fmtW(r.netProfit,0)}÷自有${fmtW(r.equity,0)}`:null,
@@ -1399,8 +1411,8 @@ function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
     ['　其中：建融借款',r=>r.buildLoan,r=>r.buildLoan,r=>r.buildLoan,
       r=>`基數${fmtW(r.buildBase,0)}×${r._sl_bltv}%`,r=>`基數${fmtW(r.buildBase,0)}×${r._ub_bltv}%`,r=>`基數${fmtW(r.buildBase,0)}×${r._cm_bltv}%`],
     ['　建商自有資金投入',r=>r.equity,r=>r.equity,null,
-      r=>`總支出${fmtW(r.totalCost,0)}-土融${fmtW(r.soilLoan,0)}-建融${fmtW(r.buildLoan,0)}`,
-      r=>`總支出${fmtW(r.totalCost,0)}-土融${fmtW(r.soilLoan,0)}-建融${fmtW(r.buildLoan,0)}`,null],
+      r=>`總支出${fmtW(r.totalCost,0)}-土融${fmtW(r.soilLoan,0)}-建融${fmtW(r.buildLoan,0)}${r.depCash?'+保證金'+fmtW(r.depCash,0):''}`,
+      r=>`總支出${fmtW(r.totalCost,0)}-土融${fmtW(r.soilLoan,0)}-建融${fmtW(r.buildLoan,0)}${r.depCash?'+保證金'+fmtW(r.depCash,0):''}`,null],
   ];
 
   const tbody=document.getElementById('s2-tbody');
@@ -2301,7 +2313,7 @@ function calcG5(){
   const cw=document.getElementById('g5-city-warn');
   if(cw)cw.innerHTML=gv('f-city')!=='taipei'?'<div class="al al-w">⚠ 第①頁縣市非台北市；本頁造價表、綠建築自治條例、工期規定皆為台北市規定。</div>':'';
   const ok=B.v0>0&&B.pRep>0;
-  ST.g5={ok,label:r.sc.name,depositTotal:r.dep,maint:r.maint,fund:B.fund,cost:B.cost};
+  ST.g5={ok,label:r.sc.name,depositTotal:r.dep,maint:r.maint,finCost:r.finCost,pay:r.pay,fund:B.fund,cost:B.cost};
 
   // 摘要
   s('g5-sum-v0',B.v0>0?fmt(B.v0,2)+'m²':'—');
