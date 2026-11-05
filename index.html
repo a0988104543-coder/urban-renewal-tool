@@ -129,6 +129,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <button class="snb" id="n2" onclick="goStep(2)">② 總銷與成本</button>
   <button class="snb" id="n3" onclick="goStep(3)">③ 分回計算</button>
   <button class="snb" id="n4" onclick="goStep(4)">④ 地主個別試算</button>
+  <button class="snb" id="n5" onclick="goStep(5)">⑤ 保證金與基金</button>
 </div>
 
 <!-- Save/Load toolbar -->
@@ -334,7 +335,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
       <label for="s2-proptax-on">物交稅（列入成本，5%固定）</label>
     </div>
   </div>
-  <div class="fd"><label>智慧建築費率</label><input type="text" data-expr id="s2-smart" value="6" min="6" max="8" step="0.5"/><div class="un">%（基地×法定容積×費率×公告現值×0.45，預設6%）</div></div>
+  <div class="fd"><label>智慧建築費率</label><input type="text" data-expr id="s2-smart" value="6" min="6" max="8" step="0.5"/><div class="un">%（基地×法定容積×費率×公告現值×0.7，預設6%）</div></div>
+</div>
+<div class="cb-row" style="margin-top:10px;">
+  <input type="checkbox" id="s2-use-g5" onchange="calcG5();calcS2();"/>
+  <label for="s2-use-g5">綠建築／智慧建築等保證金與維護費，改用「⑤ 保證金與基金」頁的計算結果</label>
+  <span class="un">（預設關閉；打開後改列⑤頁目前方案的各項保證金＋綠建築維護費，智慧建築費率欄位不再使用）</span>
 </div>
 <hr class="div"/>
 <p class="sec">基地面積比例分配（合計需等於100%）</p>
@@ -587,6 +593,145 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <button class="btn-c" onclick="runCalc()">🔄 計算</button>
 </div>
 </div><!-- end pg4 -->
+
+<!-- ═══════════════════════════════════════════════════════ STEP 5 -->
+<div class="pg" id="pg5">
+<div class="al al-i">本頁獨立計算都更容積獎勵保證金、防災型標章保證金、北市綠建築保證金、公共基金與綠建築維護費。預設帶入第①②頁數字，本頁修改<strong>不會</strong>影響其他頁；第②頁可勾選「改用⑤頁結果」才連動。適用台北市規定。</div>
+<div id="g5-city-warn"></div>
+<div class="s1-summary">
+  <div class="s1-item"><div class="sl">基準容積 V₀</div><div class="sv" id="g5-sum-v0">—</div></div>
+  <div class="s1-item"><div class="sl">報核時加權公告現值</div><div class="sv" id="g5-sum-p">—</div></div>
+  <div class="s1-item"><div class="sl">法定工程造價</div><div class="sv" id="g5-sum-c">—</div></div>
+  <div class="s1-item"><div class="sl">保證金合計（目前方案）</div><div class="sv" id="g5-sum-d">—</div></div>
+</div>
+
+<!-- A. 地號明細 -->
+<div class="bbox">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <p class="sec" style="margin:0;">A. 地號明細（算基準容積、防災型基數、加權公告現值）</p>
+    <div style="display:flex;gap:6px;">
+      <button class="btn-p" style="padding:5px 12px;font-size:12px;" onclick="g5AddParcel(true)">從第①頁帶入</button>
+      <button class="btn-n" style="padding:5px 12px;font-size:12px;" onclick="g5AddParcel(false)">＋ 新增地號</button>
+    </div>
+  </div>
+  <div style="overflow-x:auto;">
+  <table class="rtbl" id="g5-ptbl">
+    <thead><tr><th>地號</th><th>面積 m²</th><th>法定容積率 %</th><th>公告現值 元/m²</th><th>計入建築基地</th><th>防災型原建築基地</th><th></th></tr></thead>
+    <tbody id="g5-pbody"></tbody>
+  </table>
+  </div>
+  <div class="fx">
+    <code>基準容積 V₀ = Σ(計入建築基地之面積 × 容積率)</code>　<code>防災型基數 V₀′ = Σ(防災型原建築基地面積 × 容積率)</code><br/>
+    <code>加權公告現值 = Σ(面積 × 現值) ÷ Σ面積</code>（第18條：更新事業計畫<strong>範圍內</strong>全部土地加權，含道路用地等不計入建築基地者）<br/>
+    防災型原建築基地：ID值＜0.35，或63/2/15前已申請建照之合法建築物所在基地。未輸入地號時，改用第①頁基地面積、容積率與公告現值。
+  </div>
+  <div class="g4" style="margin-top:10px;">
+    <div class="fd"><label>現值所屬年度</label><input type="text" data-expr id="g5-yr-now" placeholder="例：115"/><div class="un">民國年</div></div>
+    <div class="fd"><label>預估報核年度</label><input type="text" data-expr id="g5-yr-rep" placeholder="例：116"/><div class="un">民國年（保證金用報核當期現值）</div></div>
+    <div class="fd"><label>公告現值年調幅</label><input type="text" data-expr id="g5-growth" value="0"/><div class="un">%／年（不推估填0）</div></div>
+    <div class="fd"><label>容積移轉率</label><input type="text" data-expr id="g5-xfr" placeholder="帶入第①頁"/><div class="un">%（以基準容積計，空白＝第①頁）</div></div>
+  </div>
+  <div class="g3" style="margin-top:10px;">
+    <div class="fd"><label>基準容積 V₀（手動覆寫）</label><input type="text" data-expr id="g5-v0-ovr" placeholder="空白＝自動"/><div class="un">m²</div></div>
+    <div class="fd"><label>防災型基數 V₀′（手動覆寫）</label><input type="text" data-expr id="g5-v0p-ovr" placeholder="空白＝自動"/><div class="un">m²</div></div>
+    <div class="fd"><label>報核時加權公告現值（手動覆寫）</label><input type="text" data-expr id="g5-p-ovr" placeholder="空白＝自動"/><div class="un">元／m²</div></div>
+  </div>
+  <div id="g5-a-res" class="fx"></div>
+</div>
+
+<!-- B. 獎勵勾選（方案） -->
+<div class="bbox">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+    <p class="sec" style="margin:0;">B. 申請獎勵與等級（可設最多3個方案比較）</p>
+    <div id="g5-scen-tabs" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+  </div>
+  <div id="g5-scen-body"></div>
+</div>
+
+<!-- C. 建築規模與法定造價 -->
+<div class="bbox">
+  <p class="sec">C. 建築規模與法定工程造價（114年版造價表）</p>
+  <div class="g4">
+    <div class="fd"><label>構造類別</label>
+      <select id="g5-struct">
+        <option value="auto">同第②頁</option>
+        <option value="RC">鋼筋混凝土（RC）</option>
+        <option value="SRC">鋼骨鋼筋混凝土（SRC）</option>
+        <option value="SS">鋼骨構造（SS）</option>
+        <option value="BRICK">加強磚造及輕型鋼架</option>
+      </select></div>
+    <div class="fd"><label>地上層數（不含屋突）</label><input type="text" data-expr id="g5-fl-up" placeholder="帶入第①頁"/><div class="un">層（套造價級距、算工期）</div></div>
+    <div class="fd"><label>地下層數</label><input type="text" data-expr id="g5-fl-down" placeholder="帶入第①頁"/><div class="un">層（算工期）</div></div>
+    <div class="fd"><label>造價面積（全棟總樓地板）</label><input type="text" data-expr id="g5-area" placeholder="帶入第①頁"/><div class="un">m²（含地下室、屋突）</div></div>
+  </div>
+  <p class="sec" style="margin-top:12px;">雜項工作物（選填）</p>
+  <div class="g4">
+    <div class="fd"><label>挖方</label><input type="text" data-expr id="g5-exc" value="0"/><div class="un">m³ × 160元</div></div>
+    <div class="fd"><label>填方</label><input type="text" data-expr id="g5-fill" value="0"/><div class="un">m³ × 270元</div></div>
+    <div class="fd"><label>圍牆</label><input type="text" data-expr id="g5-wall" value="0"/><div class="un">m × 2,580元</div></div>
+    <div class="fd"><label>砌卵石擋土牆</label><input type="text" data-expr id="g5-ret-stone" value="0"/><div class="un">m × 2,290元</div></div>
+  </div>
+  <div class="g4" style="margin-top:10px;">
+    <div class="fd"><label>RC擋土牆高度</label>
+      <select id="g5-ret-h"><option value="4740">3m以下（4,740元/m）</option><option value="5600">3–5m（5,600元/m）</option><option value="9080">5–8m（9,080元/m）</option><option value="23530">8m以上（23,530元/m）</option></select></div>
+    <div class="fd"><label>RC擋土牆長度</label><input type="text" data-expr id="g5-ret-len" value="0"/><div class="un">m</div></div>
+    <div class="fd"><label>排水溝寬度</label>
+      <select id="g5-drain-w"><option value="840">50cm以下（840元/m）</option><option value="2290">50–100cm（2,290元/m）</option><option value="3900">100cm以上（3,900元/m）</option></select></div>
+    <div class="fd"><label>排水溝長度</label><input type="text" data-expr id="g5-drain-len" value="0"/><div class="un">m</div></div>
+  </div>
+  <div class="cb-row" style="margin-top:8px;"><input type="checkbox" id="g5-misc-in" checked/><label for="g5-misc-in">雜項造價計入建照工程造價（影響公共基金與北市綠建築保證金）</label></div>
+  <div class="cb-row"><input type="checkbox" id="g5-green-law" checked/><label for="g5-green-law">適用《臺北市綠建築自治條例》第5條（高層建築物，或申請增加容積者）</label><span class="un" id="g5-green-law-hint"></span></div>
+  <div id="g5-c-res" class="fx"></div>
+</div>
+
+<!-- D. 工期與時間軸 -->
+<div class="bbox">
+  <p class="sec">D. 工期與時間軸</p>
+  <div class="fx" style="margin-top:0;margin-bottom:10px;">《臺北市建築管理自治條例》§12：建造執照建築期限 = <code>地下層 × 4個月 + 地上層 × 3個月</code>（屋突不計），自申報開工日起算。建築法§54：領照後6個月內開工，得展期一次3個月；§53：建築期限得展期1年，以一次為限。</div>
+  <div class="g4">
+    <div class="fd"><label>建照核發 → 開工</label><input type="text" data-expr id="g5-pre" value="6"/><div class="un">月（法定6個月，可展期3個月）</div></div>
+    <div class="fd"><label>預估實際工期</label><input type="text" data-expr id="g5-build" placeholder="空白＝法定期限"/><div class="un">月（開工 → 竣工）</div></div>
+    <div class="fd"><label>竣工 → 領得使照</label><input type="text" data-expr id="g5-useper" value="3"/><div class="un">月</div></div>
+    <div class="fd"><label>使照 → 取得標章</label><input type="text" data-expr id="g5-label" value="24"/><div class="un">月（法定2年內，逾期沒收保證金）</div></div>
+  </div>
+  <div id="g5-d-res" style="margin-top:10px;"></div>
+</div>
+
+<!-- E. 資金成本 -->
+<div class="bbox">
+  <p class="sec">E. 保證金資金成本</p>
+  <div class="g3">
+    <div class="fd"><label>現金／定存質押　年利率</label><input type="text" data-expr id="g5-r-cash" value="2"/><div class="un">%／年（資金機會成本，請依實際填）</div></div>
+    <div class="fd"><label>銀行書面保證　年費率</label><input type="text" data-expr id="g5-r-bank" value="1"/><div class="un">%／年（保證手續費，請依實際填）</div></div>
+    <div class="fd"><label>採用方式（列入合計）</label>
+      <select id="g5-pay"><option value="bank">銀行書面保證</option><option value="cash">現金／定存質押</option></select></div>
+  </div>
+  <div class="fx">占用期間 = 使照前繳納 → 取得標章退還（D欄「使照→取得標章」）。銀行保證之保證期間：都更保證金不得少於使照後2年（容獎辦法§18）；北市綠建築保證金至使照後2年6個月以上（管理辦法§4），按較長者計費。</div>
+</div>
+
+<!-- 結果 -->
+<p class="sec">試算結果（目前方案）</p>
+<div class="g4" style="margin-bottom:10px;">
+  <div class="hi teal"><p class="ml">可退還保證金合計</p><p class="mv" id="g5-r-dep">—</p><p class="ms" id="g5-r-dep-s"></p></div>
+  <div class="hi coral"><p class="ml">不可退支出</p><p class="mv" id="g5-r-sunk">—</p><p class="ms" id="g5-r-sunk-s"></p></div>
+  <div class="hi blue"><p class="ml">公共基金（法定，另列）</p><p class="mv" id="g5-r-fund">—</p><p class="ms">公寓大廈管理條例施行細則§5</p></div>
+  <div class="hi purple"><p class="ml">容積結果</p><p class="mv" id="g5-r-far">—</p><p class="ms" id="g5-r-far-s"></p></div>
+</div>
+<div id="g5-alerts"></div>
+<div class="bbox">
+  <p class="sec" style="margin-bottom:8px;">逐項明細</p>
+  <div style="overflow-x:auto;"><table class="rtbl"><thead><tr><th>項目</th><th>計算式</th><th>金額</th><th>性質</th></tr></thead><tbody id="g5-detail"></tbody></table></div>
+</div>
+<div class="bbox">
+  <p class="sec" style="margin-bottom:8px;">方案比較</p>
+  <div style="overflow-x:auto;"><table class="rtbl" id="g5-cmp"></table></div>
+</div>
+<p class="note">依據：都市更新建築容積獎勵辦法§10–13、§18（114/1/13）；臺北市防災型都市更新細部計畫QA Q10、Q11（114/5/9）；臺北市綠建築自治條例§5、§8、§9；臺北市綠建築保證金及維護費用管理辦法§3、§4；公寓大廈管理條例施行細則§5；臺北市建造執照工程造價表（114/8/20生效）；臺北市建築管理自治條例§12；建築法§53、§54。銅級、合格級限都更條例§7-1-3且未達500m²之案件。</p>
+<div class="nav-btns">
+  <button class="btn-p" onclick="goStep(4)">← 上一步</button>
+  <button class="btn-c" onclick="runCalc()">🔄 計算</button>
+</div>
+</div><!-- end pg5 -->
 </div><!-- end app -->
 
 <script>
@@ -613,11 +758,12 @@ const ST={
 // NAVIGATION
 // ══════════════════════════════════════════════════════════════════
 function goStep(n){
-  [1,2,3,4].forEach(i=>{
+  [1,2,3,4,5].forEach(i=>{
     document.getElementById('pg'+i).classList.toggle('active',i===n);
     document.getElementById('n'+i).classList.toggle('active',i===n);
   });
-  if(n===2){updateS2Summary();calcS2();}
+  if(n===2){calcG5();updateS2Summary();calcS2();}
+  if(n===5){calcG5();}
   if(n===3){updateS3Summary();renderS3();}
   if(n===4){updateS4Summary();calcS4();}
 }
@@ -825,8 +971,9 @@ function updateUI1(){
 const LEGAL_COST={
   taipei:{
     RC:[[5,9660],[8,12550],[12,14440],[15,17320],[20,18180],[25,19120],[30,20070],[999,21050]],
-    SRC:[[10,17900],[15,18810],[20,19730],[25,20630],[30,21550],[999,22460]],
-    SS:[[10,21950],[15,23050],[20,24140],[25,25230],[30,26340],[999,27410]]
+    // 114年版（府都建字第11461417181號令，114/8/20生效）
+    SRC:[[10,17900],[15,18810],[20,19730],[25,20740],[30,21780],[35,22870],[999,24010]],
+    SS:[[10,21950],[15,23050],[20,24210],[25,25410],[30,26680],[35,28040],[999,29430]]
   },
   newtaipei:{
     RC:[[5,8180],[12,9460],[20,12290],[30,14240],[999,15310]],
@@ -930,7 +1077,14 @@ function calcS2(){
     const greenMaint = fundY * 0.5;                           // 綠建築維護費 = 管理基金×0.5
     const greenDeposit = legalCostWan * WAN * 0.05;           // 綠建築保證金 = 法定造價×5%
     const greenTotal = greenMaint + greenDeposit;
-    const smartDeposit = c.aM * far * smartR * annPrice * 0.45; // 智慧建築保證金
+    const smartDeposit = c.aM * far * smartR * annPrice * 0.7;  // 智慧建築保證金（容獎辦法§18：公告現值×0.7）
+    // 開關打開時，改用第⑤頁的保證金與維護費（依本模式基地比例分攤）
+    const g5=ST.g5;
+    if(document.getElementById('s2-use-g5')?.checked && g5 && g5.ok){
+      const p=ST.aM2>0?c.aM/ST.aM2:1;
+      const dep=g5.depositTotal*p, maint=g5.maint*p;
+      return{propTax, greenMaint:maint, greenDeposit:dep, greenTotal:maint+dep, smartDeposit:0, fromG5:true};
+    }
     return{propTax, greenMaint, greenDeposit, greenTotal, smartDeposit};
   }
 
@@ -1097,6 +1251,12 @@ function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
   document.getElementById('th-urb').style.display=res?.urban?'':'none';
   document.getElementById('th-comm').style.display=res?.comm?'':'none';
 
+  const useG5=!!(document.getElementById('s2-use-g5')?.checked&&ST.g5&&ST.g5.ok);
+  const greenDet=r=>useG5
+    ?`⑤頁「${ST.g5.label}」：保證金${fmtW(r.greenDeposit,1)}＋維護費${fmtW(r.greenMaint,1)}（依基地比例分攤）`
+    :`維護費${fmtW(r.greenMaint,1)}（管理基金×0.5）+ 保證金${fmtW(r.greenDeposit,1)}（法定造價×5%）`;
+  const smartDet=r=>useG5?'已併入上一列（⑤頁）'
+    :`基地${fmt(r.aM,0)}m²×法定容積×${fmt(gf('s2-smart'),1)}%×公告現值×0.7`;
   const rows=[
     // [label, selfFn, urbFn, commVal, selfDetail, urbDetail, commDetail]
     ['土地成本'],
@@ -1157,14 +1317,10 @@ function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
       r=>`建商總銷${fmtW(r.salesRev,0)} × 5%`,
       r=>`建商分回${fmtW(r.builderRev,0)} × 5%`,
       r=>`地主總銷${fmtW(r.totalSalesRev,0)} × 5%`],
-    ['　綠建築費用',r=>r.greenTotal,r=>r.greenTotal,r=>r.greenTotal,
-      r=>`維護費${fmtW(r.greenMaint,1)}（管理基金×0.5）+ 保證金${fmtW(r.greenDeposit,1)}（法定造價×5%）`,
-      r=>`維護費${fmtW(r.greenMaint,1)}（管理基金×0.5）+ 保證金${fmtW(r.greenDeposit,1)}（法定造價×5%）`,
-      r=>`維護費${fmtW(r.greenMaint,1)}（管理基金×0.5）+ 保證金${fmtW(r.greenDeposit,1)}（法定造價×5%）`],
+    [useG5?'　標章保證金＋綠建築維護費（⑤頁）':'　綠建築費用',r=>r.greenTotal,r=>r.greenTotal,r=>r.greenTotal,
+      r=>greenDet(r),r=>greenDet(r),r=>greenDet(r)],
     ['　智慧建築保證金',r=>r.smartDeposit,r=>r.smartDeposit,r=>r.smartDeposit,
-      r=>`基地${fmt(r.aM,0)}m²×法定容積×${fmt(gf('s2-smart'),1)}%×公告現值×0.45`,
-      r=>`基地${fmt(r.aM,0)}m²×法定容積×${fmt(gf('s2-smart'),1)}%×公告現值×0.45`,
-      r=>`基地${fmt(r.aM,0)}m²×法定容積×${fmt(gf('s2-smart'),1)}%×公告現值×0.45`],
+      r=>smartDet(r),r=>smartDet(r),r=>smartDet(r)],
     ['建商收入'],
     ['　建商收入',r=>r.salesRev,r=>r.builderRev,'委託費: '+fmtW(res?.comm?.commFee),
       r=>`${fmt(r.sP,1)}坪 × ${gf('s2-pprice')}萬 + ${r.car}位 × ${gf('s2-cprice')}萬`,
@@ -1621,6 +1777,7 @@ function runCalc(){
   if(a&&a.tagName==='INPUT')a.blur(); // 先提交正在編輯的欄位
   checkPct();
   calcS1();
+  calcG5();
   updateS2Summary();calcS2();
   updateS3Summary();renderS3();
   updateS4Summary();calcS4();
@@ -1631,7 +1788,7 @@ updateUI1();calcS1();checkPct();
 // ══════════════════════════════════════════════════════════════════
 // SAVE / LOAD PROJECT
 // ══════════════════════════════════════════════════════════════════
-const SAVE_VERSION='1.1';
+const SAVE_VERSION='1.2';
 
 // All input/select IDs to persist
 const ALL_FIELD_IDS=[
@@ -1665,13 +1822,14 @@ function saveProject(){
     savedAt:new Date().toISOString(),
     projectName:document.getElementById('f-name')?.value||'未命名專案',
     inputs:{},
-    owners:[...owners]
+    owners:[...owners],
+    g5:g5Export()
   };
   ALL_FIELD_IDS.forEach(id=>{
     const el=document.getElementById(id);
     if(el)data.inputs[id]=el.value;
   });
-  ['s2-vat-on','s2-proptax-on'].forEach(id=>{
+  ['s2-vat-on','s2-proptax-on','s2-use-g5'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)data.inputs[id]=el.checked?'1':'0';
   });
@@ -1715,11 +1873,13 @@ function loadProject(input){
       // Restore owners
       if(Array.isArray(data.owners))owners=[...data.owners];
       renderOwnerInputs();
+      g5Import(data.g5); // 舊版專案檔沒有 g5 時回到預設值
       // Recalculate all
       syncKP('K');
       checkPct();
       updateUI1();
       calcS1();
+      calcG5();
       calcS2();
       calcS4();
       const st=document.getElementById('save-status');
@@ -1874,6 +2034,316 @@ function calcS4(){
     s('s4-tot-rent',fmt(totRent,2)+'萬');
   }
 }
+
+// ══════════════════════════════════════════════════════════════════
+// STEP 5: 保證金與基金（獨立計算，不回寫其他頁）
+// ══════════════════════════════════════════════════════════════════
+const G5_RATE={
+  green:{'鑽石':10,'黃金':8,'銀':6,'銅':4,'合格':2},
+  smart:{'鑽石':10,'黃金':8,'銀':6,'銅':4,'合格':2},
+  acc:{'標章':5,'一級':4,'二級':3},
+  seis:{'標章':10,'一級':6,'二級':4,'三級':2}
+};
+const G5_ITEM={green:'綠建築（§10）',smart:'智慧建築（§11）',acc:'無障礙（§12）',seis:'耐震（§13）'};
+const G5_LV_NAME={green:{'鑽石':'鑽石級','黃金':'黃金級','銀':'銀級','銅':'銅級','合格':'合格級'},
+  smart:{'鑽石':'鑽石級','黃金':'黃金級','銀':'銀級','銅':'銅級','合格':'合格級'},
+  acc:{'標章':'無障礙住宅建築標章','一級':'住宅性能評估第一級','二級':'住宅性能評估第二級'},
+  seis:{'標章':'耐震設計標章','一級':'結構安全性能第一級','二級':'結構安全性能第二級','三級':'結構安全性能第三級'}};
+// 防災型最低門檻之保證金比例（QA Q10：綠/智銀級；耐震第4級比照第3級2%；無障礙第3、4級比照第2級3%）
+const G5_DIS_MIN={green:{r:6,t:'銀級（防災型最低門檻）'},smart:{r:6,t:'銀級（防災型最低門檻）'},seis:{r:2,t:'結構安全第4級（比照第3級2%）'},acc:{r:3,t:'無障礙第3、4級（比照第2級3%）'}};
+const G5_BRICK=8350;
+const G5_FIELDS=['g5-yr-now','g5-yr-rep','g5-growth','g5-xfr','g5-v0-ovr','g5-v0p-ovr','g5-p-ovr',
+  'g5-struct','g5-fl-up','g5-fl-down','g5-area','g5-exc','g5-fill','g5-wall','g5-ret-stone','g5-ret-h','g5-ret-len','g5-drain-w','g5-drain-len',
+  'g5-pre','g5-build','g5-useper','g5-label','g5-r-cash','g5-r-bank','g5-pay'];
+const G5_CHECKS=['g5-misc-in','g5-green-law'];
+const g5NewScen=name=>({name,green:'',smart:'',acc:'',seis:'',otherC:0,local:0,disaster:false});
+let g5Parcels=[];               // [{no,area,far,ann,inSite,dis}]
+let g5Scens=[g5NewScen('方案A')];
+let g5Cur=0;
+let g5GreenLawTouched=false;
+const g5num=id=>{const v=parseFloat(document.getElementById(id)?.value);return isNaN(v)?null:v;};
+const g5esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+
+function g5AddParcel(fromS1){
+  if(fromS1){
+    g5Parcels.push({no:gv('f-name')||'第①頁基地',area:+(ST.aM2||0).toFixed(2),far:gf('f-far')||'',ann:gf('f-ann')||'',inSite:true,dis:false});
+  }else g5Parcels.push({no:'',area:'',far:gf('f-far')||'',ann:'',inSite:true,dis:false});
+  g5RenderParcels();calcG5();
+}
+function g5DelParcel(i){g5Parcels.splice(i,1);g5RenderParcels();calcG5();}
+function g5SetParcel(i,k,el){
+  const p=g5Parcels[i];if(!p)return;
+  if(k==='inSite'||k==='dis')p[k]=el.checked;
+  else if(k==='no')p[k]=el.value;
+  else p[k]=parseFloat(el.value)||0;
+  calcG5();
+}
+function g5RenderParcels(){
+  const tb=document.getElementById('g5-pbody');if(!tb)return;
+  if(!g5Parcels.length){tb.innerHTML='<tr><td colspan="7" style="color:#aaa;">尚未輸入地號：使用第①頁基地面積、容積率與公告現值。</td></tr>';return;}
+  const inp=(i,k,v,w)=>`<input type="text" ${k==='no'?'':'data-expr'} value="${g5esc(v)}" onchange="g5SetParcel(${i},'${k}',this)" style="width:${w}px;font-size:12px;padding:4px 6px;border:1px solid #ddd;border-radius:5px;"/>`;
+  tb.innerHTML=g5Parcels.map((p,i)=>`<tr>
+    <td>${inp(i,'no',p.no,130)}</td>
+    <td>${inp(i,'area',p.area,90)}</td>
+    <td>${inp(i,'far',p.far,60)}</td>
+    <td>${inp(i,'ann',p.ann,100)}</td>
+    <td style="text-align:center;"><input type="checkbox" ${p.inSite?'checked':''} onchange="g5SetParcel(${i},'inSite',this)"/></td>
+    <td style="text-align:center;"><input type="checkbox" ${p.dis?'checked':''} onchange="g5SetParcel(${i},'dis',this)"/></td>
+    <td><button class="btn-p" style="padding:2px 8px;font-size:11px;" onclick="g5DelParcel(${i})">刪除</button></td></tr>`).join('');
+}
+
+// ── 方案 ──
+function g5RenderScen(){
+  const tabs=document.getElementById('g5-scen-tabs');if(!tabs)return;
+  tabs.innerHTML=g5Scens.map((sc,i)=>`<button class="${i===g5Cur?'btn-n':'btn-p'}" style="padding:5px 12px;font-size:12px;" onclick="g5Cur=${i};g5RenderScen();calcG5();">${g5esc(sc.name)}</button>`).join('')
+    +(g5Scens.length<3?`<button class="btn-c" style="padding:5px 12px;font-size:12px;" onclick="g5CopyScen()">＋ 複製為新方案</button>`:'')
+    +(g5Scens.length>1?`<button class="btn-p" style="padding:5px 12px;font-size:12px;color:#D85A30;" onclick="g5DelScen()">刪除此方案</button>`:'');
+  const sc=g5Scens[g5Cur];
+  const radios=(key)=>{
+    const opts=[['','不申請'],...Object.keys(G5_RATE[key]).map(lv=>[lv,G5_LV_NAME[key][lv]+' '+G5_RATE[key][lv]+'%'])];
+    return opts.map(([v,t])=>`<label style="display:inline-flex;align-items:center;gap:4px;margin:0 12px 6px 0;font-size:12px;color:#555;cursor:pointer;"><input type="radio" name="g5-${key}" value="${v}" ${sc[key]===v?'checked':''} onchange="g5SetScen('${key}',this.value)" style="accent-color:#1D9E75;"/>${t}</label>`).join('');
+  };
+  document.getElementById('g5-scen-body').innerHTML=`
+    <div class="g3" style="margin-bottom:10px;">
+      <div class="fd"><label>方案名稱</label><input type="text" value="${g5esc(sc.name)}" onchange="g5SetScen('name',this.value)"/></div>
+      <div class="fd"><label>其他中央獎勵（不收保證金）</label><input type="text" data-expr value="${sc.otherC||0}" onchange="g5SetScen('otherC',this.value)"/><div class="un">%（§6、§14時程、§16協議合建…合計）</div></div>
+      <div class="fd"><label>地方獎勵</label><input type="text" data-expr value="${sc.local||0}" onchange="g5SetScen('local',this.value)"/><div class="un">%（上限20%）</div></div>
+    </div>
+    ${['green','smart','acc','seis'].map(k=>`<div style="padding:6px 0;border-bottom:1px solid #f0f0f0;"><div style="font-size:12px;font-weight:600;color:#333;margin-bottom:4px;">${G5_ITEM[k]}</div>${radios(k)}</div>`).join('')}
+    <div class="cb-row" style="margin-top:10px;"><input type="checkbox" id="g5-dis-cb" ${sc.disaster?'checked':''} onchange="g5SetScen('disaster',this.checked)"/><label for="g5-dis-cb">申請防災型都更（原建築基地基準容積 × 30%）</label></div>
+    <div class="un">勾選後：中央未申請的標章，依防災型最低門檻補收保證金（綠建築／智慧建築銀級6%、耐震第4級2%、無障礙第3、4級3%）；能效1+不收保證金。已依都更獎勵繳納者不重複收（QA Q11）。</div>`;
+}
+function g5SetScen(k,v){
+  const sc=g5Scens[g5Cur];
+  if(k==='otherC'||k==='local')sc[k]=parseFloat(v)||0;
+  else sc[k]=v;
+  if(k==='name')g5RenderScen();
+  calcG5();
+}
+function g5CopyScen(){
+  if(g5Scens.length>=3)return;
+  const c=JSON.parse(JSON.stringify(g5Scens[g5Cur]));
+  c.name='方案'+'ABC'[g5Scens.length];
+  g5Scens.push(c);g5Cur=g5Scens.length-1;g5RenderScen();calcG5();
+}
+function g5DelScen(){
+  if(g5Scens.length<=1)return;
+  g5Scens.splice(g5Cur,1);g5Cur=Math.max(0,g5Cur-1);g5RenderScen();calcG5();
+}
+
+// ── 共用基礎（地號、造價、工期）──
+function g5Base(){
+  const out={warn:[]};
+  // 地號
+  let v0=0,v0p=0,landA=0,landV=0,siteA=0,hasP=g5Parcels.length>0;
+  if(hasP){
+    g5Parcels.forEach(p=>{
+      const a=+p.area||0,f=(+p.far||0)/100,ann=+p.ann||0;
+      landA+=a;landV+=a*ann;
+      if(p.inSite){v0+=a*f;siteA+=a;if(p.dis)v0p+=a*f;}
+    });
+  }else{
+    siteA=ST.aM2||0;landA=siteA;v0=siteA*(ST.far||0);v0p=v0;landV=siteA*gf('f-ann');
+  }
+  const pNow=landA>0?landV/landA:0;
+  const yNow=g5num('g5-yr-now'),yRep=g5num('g5-yr-rep'),gr=(g5num('g5-growth')||0)/100;
+  const yrs=(yNow!=null&&yRep!=null)?Math.max(0,yRep-yNow):0;
+  let pRep=pNow*Math.pow(1+gr,yrs);
+  const v0o=g5num('g5-v0-ovr'),v0po=g5num('g5-v0p-ovr'),po=g5num('g5-p-ovr');
+  if(v0o!=null)v0=v0o; if(v0po!=null)v0p=v0po; if(po!=null)pRep=po;
+  Object.assign(out,{hasP,v0,v0p,pNow,pRep,yrs,gr,siteA,landA,v0Auto:v0o==null,v0pAuto:v0po==null,pAuto:po==null});
+  if(!hasP)out.warn.push('未輸入地號：防災型基數暫以整個基準容積計，請輸入地號並勾選「防災型原建築基地」。');
+  const xf=g5num('g5-xfr');out.xfr=(xf!=null?xf:(ST.xfrR||0)*100)/100;
+
+  // 造價
+  let st=gv('g5-struct');if(st==='auto')st=gv('s2-struct')||'RC';
+  const up=g5num('g5-fl-up')!=null?g5num('g5-fl-up'):(ST.finalFloors||0);
+  const down=g5num('g5-fl-down')!=null?g5num('g5-fl-down'):(ST.bFloors||0);
+  const area=g5num('g5-area')!=null?g5num('g5-area'):(ST.grandM2||0);
+  const unit=st==='BRICK'?G5_BRICK:getLegalRate('taipei',st,up);
+  const bldg=area*unit;
+  const misc=(g5num('g5-exc')||0)*160+(g5num('g5-fill')||0)*270+(g5num('g5-wall')||0)*2580+(g5num('g5-ret-stone')||0)*2290
+    +(g5num('g5-ret-len')||0)*(parseFloat(gv('g5-ret-h'))||0)+(g5num('g5-drain-len')||0)*(parseFloat(gv('g5-drain-w'))||0);
+  const miscIn=document.getElementById('g5-misc-in')?.checked;
+  const cost=bldg+(miscIn?misc:0);
+  const fund=mgmtFundWan(cost/WAN)*WAN;
+  const stName={RC:'RC',SRC:'SRC',SS:'SS',BRICK:'加強磚造'}[st];
+  Object.assign(out,{st,stName,up,down,area,unit,bldg,misc,miscIn,cost,fund});
+  // 綠建築自治條例：預設依高層（16層以上）判斷，使用者勾選後以勾選為準
+  const gl=document.getElementById('g5-green-law');
+  if(gl&&!g5GreenLawTouched)gl.checked=up>=16;
+  out.greenLaw=!!gl?.checked;
+
+  // 工期
+  const legalM=down*4+up*3;
+  const pre=g5num('g5-pre')??6, build=g5num('g5-build')??legalM, usep=g5num('g5-useper')??3, lab=g5num('g5-label')??24;
+  Object.assign(out,{legalM,pre,build,usep,lab});
+  return out;
+}
+
+// ── 單一方案計算 ──
+function g5Calc(sc,B){
+  const unitG=B.pRep*0.7; // 元/m²
+  const items=[];let centralPct=0,depCentral=0,depDis=0;
+  ['green','smart','acc','seis'].forEach(k=>{
+    const lv=sc[k];
+    if(lv){
+      const r=G5_RATE[k][lv];centralPct+=r;
+      const a=B.v0*r/100,amt=unitG*a;depCentral+=amt;
+      items.push({k,src:'都更容獎',name:G5_ITEM[k]+'　'+G5_LV_NAME[k][lv],rate:r,area:a,amt});
+    }else if(sc.disaster){
+      const m=G5_DIS_MIN[k],a=B.v0*m.r/100,amt=unitG*a;depDis+=amt;
+      items.push({k,src:'防災型',name:G5_ITEM[k]+'　'+m.t,rate:m.r,area:a,amt});
+    }
+  });
+  const warn=[];
+  if(sc.disaster){
+    ['green','smart'].forEach(k=>{if(sc[k]==='銅'||sc[k]==='合格')warn.push(`⚠ 防災型要求${k==='green'?'綠建築':'智慧建築'}銀級以上，目前選${sc[k]}級不符合防災型條件。`);});
+  }
+  ['green','smart'].forEach(k=>{if(sc[k]==='銅'||sc[k]==='合格')warn.push(`ℹ ${G5_ITEM[k]}銅級、合格級限都更條例§7-1-3且面積未達500m²之案件（建築基地 ${fmt(B.siteA,0)}m²）。`);});
+  // 容積上限
+  const bonusPct=centralPct+(sc.otherC||0)+(sc.local||0);
+  if((sc.local||0)>20)warn.push(`⚠ 地方獎勵 ${fmt(sc.local,2)}% 超過上限20%。`);
+  const usedPct=Math.min(bonusPct,50),overPct=Math.max(0,bonusPct-50);
+  if(overPct>0)warn.push(`⚠ 都更獎勵合計 ${fmt(bonusPct,2)}% 超過50%上限（都更條例§65），超出 ${fmt(overPct,2)}%（約 ${fmt(B.v0*overPct/100,2)}m²）拿不到容積；但已勾選項目的保證金仍依全額計收，約相當於 ${fmtW(unitG*B.v0*overPct/100,0)} 押了卻換不到容積。`);
+  let disM2=sc.disaster?B.v0p*0.3:0;
+  const before=B.v0*(1+usedPct/100+B.xfr);
+  let capCut=0;
+  if(sc.disaster&&B.v0>0&&before+disM2>2*B.v0){capCut=before+disM2-2*B.v0;disM2=Math.max(0,disM2-capCut);
+    warn.push(`ℹ 加計防災型後超過基準容積2倍，防災型獎勵以2倍為上限核算（減少 ${fmt(capCut,2)}m²）。`);}
+  const totalV=before+disM2;
+  // 綠建築自治條例保證金
+  const glFull=B.greenLaw?B.cost*0.05:0;
+  const greenCentral=items.filter(x=>x.k==='green'&&x.src==='都更容獎').reduce((a,x)=>a+x.amt,0);
+  let glDue=glFull;
+  if(B.greenLaw&&greenCentral>0)glDue=Math.max(0,glFull-greenCentral);
+  if(B.greenLaw&&!greenCentral&&sc.disaster&&sc.green==='')warn.push('ℹ 綠建築保證金只來自防災型（未申請都更綠建築獎勵）時，能否抵充北市自治條例保證金尚無明文，本頁暫以全額計收自治條例保證金，請向都發局確認。');
+  // 維護費：自治條例§9適用，或申請都更綠建築獎勵（管理辦法§6）
+  const maintOn=B.greenLaw||greenCentral>0;
+  const maint=maintOn?B.fund*0.5:0;
+  // 資金成本
+  const depUR=depCentral+depDis;
+  const dep=depUR+glDue;
+  const rc=(g5num('g5-r-cash')||0)/100,rb=(g5num('g5-r-bank')||0)/100;
+  const yUR=Math.max(B.lab,24)/12,yGL=Math.max(B.lab,30)/12,yCash=B.lab/12;
+  const costCash=dep*rc*yCash;
+  const costBank=depUR*rb*yUR+glDue*rb*yGL;
+  const pay=gv('g5-pay')||'bank';
+  const finCost=pay==='cash'?costCash:costBank;
+  return{sc,unitG,items,centralPct,bonusPct,usedPct,overPct,disM2,totalV,ratio:B.v0>0?totalV/B.v0:0,
+    depCentral,depDis,glFull,glDue,greenCentral,maint,maintOn,dep,costCash,costBank,finCost,pay,warn};
+}
+
+function calcG5(){
+  const pg=document.getElementById('pg5');if(!pg)return;
+  if(!g5Scens.length)g5Scens=[g5NewScen('方案A')];
+  if(g5Cur>=g5Scens.length)g5Cur=0;
+  if(!document.getElementById('g5-scen-tabs').innerHTML)g5RenderScen();
+  if(!document.getElementById('g5-pbody').innerHTML)g5RenderParcels();
+  const B=g5Base();
+  const R=g5Scens.map(sc=>g5Calc(sc,B));
+  const r=R[g5Cur];
+  const cw=document.getElementById('g5-city-warn');
+  if(cw)cw.innerHTML=gv('f-city')!=='taipei'?'<div class="al al-w">⚠ 第①頁縣市非台北市；本頁造價表、綠建築自治條例、工期規定皆為台北市規定。</div>':'';
+  const ok=B.v0>0&&B.pRep>0;
+  ST.g5={ok,label:r.sc.name,depositTotal:r.dep,maint:r.maint,fund:B.fund,cost:B.cost};
+
+  // 摘要
+  s('g5-sum-v0',B.v0>0?fmt(B.v0,2)+'m²':'—');
+  s('g5-sum-p',B.pRep>0?fmtI(B.pRep)+'元/m²':'—');
+  s('g5-sum-c',B.cost>0?fmtW(B.cost,0):'—');
+  s('g5-sum-d',ok?fmtW(r.dep,0):'—');
+  // A 結果
+  const a=document.getElementById('g5-a-res');
+  if(a)a.innerHTML=`基準容積 V₀ <code>${fmt(B.v0,2)}m²</code>${B.v0Auto?'':'（手動）'}　防災型基數 V₀′ <code>${fmt(B.v0p,2)}m²</code>${B.v0pAuto?'':'（手動）'}<br/>
+    加權公告現值（現值年度）<code>${fmtI(B.pNow)}元/m²</code> → 報核時 <code>${fmtI(B.pRep)}元/m²</code>${B.pAuto?(B.yrs>0?`（${B.yrs}年 × 年調幅${fmt(B.gr*100,2)}%）`:''):'（手動）'}　× 0.7 = <code>${fmtI(B.pRep*0.7)}元/m²</code><br/>
+    容積移轉 <code>${fmt(B.xfr*100,2)}%</code>　${B.warn.map(w=>'<span style="color:#854F0B;">ℹ '+w+'</span>').join(' ')}`;
+  // C 結果
+  const c=document.getElementById('g5-c-res');
+  if(c)c.innerHTML=`${B.stName} ${B.up}層 → 單價 <code>${fmtI(B.unit)}元/m²</code>　× 造價面積 <code>${fmt(B.area,2)}m²</code> = <code>${fmtW(B.bldg,1)}</code>
+    ${B.misc>0?`＋ 雜項 <code>${fmtW(B.misc,1)}</code>${B.miscIn?'':'（未計入）'}`:''}<br/>法定工程造價 <code>${fmtW(B.cost,1)}</code>　→ 公共基金 <code>${fmtW(B.fund,1)}</code>（累進：1千萬以下2%、至1億1.5%、至10億0.5%、逾10億0.3%）`;
+  s('g5-green-law-hint',g5GreenLawTouched?'（已手動設定）':(B.up>=16?'（16層以上，預設勾選）':'（未達16層，預設不勾；高度50m以上亦屬高層，請自行勾選）'));
+  // D 時間軸
+  const d=document.getElementById('g5-d-res');
+  if(d){
+    const tot=B.pre+B.build+B.usep+B.lab;
+    const chk=[];
+    if(B.pre>9)chk.push('<div class="al al-w">⚠ 建照核發後超過9個月仍未開工（6個月＋展期3個月），建照失效（建築法§54）。</div>');
+    else if(B.pre>6)chk.push('<div class="al al-i">ℹ 開工超過6個月，需申請展期一次（3個月）。</div>');
+    if(B.build>B.legalM+12)chk.push(`<div class="al al-w">⚠ 預估工期 ${B.build}個月 超過法定期限＋展期1年（${B.legalM+12}個月），建照失效（建築法§53）；或須依自治條例§12申請酌予增加。</div>`);
+    else if(B.build>B.legalM)chk.push(`<div class="al al-i">ℹ 預估工期超過法定建築期限 ${B.legalM}個月，需申請展期（1年，以一次為限）。</div>`);
+    if(B.lab>24)chk.push('<div class="al al-w">⚠ 使照後超過2年才取得標章，保證金沒收（容獎辦法§18）。</div>');
+    d.innerHTML=`<div class="brow"><span class="bl">法定建築期限</span><span class="bv">地下${B.down}層×4 ＋ 地上${B.up}層×3 ＝ ${B.legalM}個月（${fmt(B.legalM/12,1)}年）</span></div>
+      <div class="brow"><span class="bl">建照 → 開工 → 竣工 → 使照 → 標章</span><span class="bv">${B.pre} ＋ ${B.build} ＋ ${B.usep} ＋ ${B.lab} ＝ ${tot}個月（${fmt(tot/12,1)}年）</span></div>
+      <div class="brow"><span class="bl">保證金占用期間（使照前繳 → 取得標章退還）</span><span class="bv">${B.lab}個月</span></div>
+      <div class="brow"><span class="bl">防災型時程提醒</span><span class="bv" style="font-family:inherit;font-size:11px;">計畫公告後5年內報核、核定後1年內申請建照；綠建築／智慧建築／無障礙候選證書於建照核發後、申報開工前取得；能效1+候選證書於使照前取得</span></div>
+      ${chk.join('')}`;
+  }
+  // 結果卡
+  s('g5-r-dep',ok?fmtW(r.dep,0):'—');
+  s('g5-r-dep-s',ok?`都更 ${fmtW(r.depCentral,0)}＋防災 ${fmtW(r.depDis,0)}＋北市綠建築 ${fmtW(r.glDue,0)}`:'需有基準容積與公告現值');
+  s('g5-r-sunk',ok?fmtW(r.maint+r.finCost,0):'—');
+  s('g5-r-sunk-s',ok?`維護費 ${fmtW(r.maint,1)}＋資金成本 ${fmtW(r.finCost,1)}（${r.pay==='cash'?'現金':'銀行保證'}）`:'');
+  s('g5-r-fund',B.cost>0?fmtW(B.fund,1):'—');
+  s('g5-r-far',B.v0>0?fmt(r.ratio,3)+' 倍':'—');
+  s('g5-r-far-s',B.v0>0?`都更採計${fmt(r.usedPct,2)}%＋容移${fmt(B.xfr*100,2)}%${r.sc.disaster?'＋防災'+fmt(r.disM2/B.v0*100,2)+'%':''}`:'');
+  document.getElementById('g5-alerts').innerHTML=r.warn.map(w=>`<div class="al ${w.startsWith('⚠')?'al-w':'al-i'}">${w}</div>`).join('');
+  // 明細
+  const rows=[];
+  const row=(n,f,v,t,cls)=>rows.push(`<tr${cls?` class="${cls}"`:''}><td>${n}</td><td style="text-align:left;font-size:11px;color:#666;font-family:inherit;">${f}</td><td style="text-align:right;">${v}</td><td style="font-family:inherit;font-size:11px;">${t}</td></tr>`);
+  r.items.forEach(x=>row(`${x.src==='防災型'?'【防災型補收】':''}${x.name}`,`${fmtI(r.unitG)}元/m² × V₀ ${fmt(B.v0,2)} × ${x.rate}% ＝ ${fmt(x.area,2)}m²`,fmtW(x.amt,1),'可退（使照後2年內取得）'));
+  if(!r.items.length)row('（未勾選任何收保證金之標章）','','—','');
+  if(B.greenLaw)row('北市綠建築自治條例保證金',`法定造價 ${fmtW(B.cost,1)} × 5% ＝ ${fmtW(r.glFull,1)}${r.greenCentral>0?`；扣除都更綠建築保證金 ${fmtW(r.greenCentral,1)}（§8）`:''}`,fmtW(r.glDue,1),r.glDue>0?'可退':'免繳');
+  else row('北市綠建築自治條例保證金','未勾選適用自治條例§5','—','');
+  row('<strong>可退還保證金合計</strong>','',`<strong>${fmtW(r.dep,1)}</strong>`,'','tr-total');
+  row('綠建築維護費',r.maintOn?`公共基金 ${fmtW(B.fund,1)} × 50%（撥入社區公共基金）`:'未適用自治條例且未申請都更綠建築獎勵',fmtW(r.maint,1),'不退');
+  row('保證金資金成本（現金／定存）',`${fmtW(r.dep,0)} × ${fmt(g5num('g5-r-cash')||0,2)}% × ${fmt(B.lab/12,2)}年`,fmtW(r.costCash,1),r.pay==='cash'?'不退（採用）':'參考');
+  row('保證金資金成本（銀行保證）',`都更/防災 × ${fmt(g5num('g5-r-bank')||0,2)}% × ${fmt(Math.max(B.lab,24)/12,2)}年＋北市綠建築 × ${fmt(Math.max(B.lab,30)/12,2)}年`,fmtW(r.costBank,1),r.pay==='bank'?'不退（採用）':'參考');
+  row('公共基金',`法定造價 ${fmtW(B.cost,1)} 累進`,fmtW(B.fund,1),'法定提列（非標章成本）');
+  document.getElementById('g5-detail').innerHTML=rows.join('');
+  // 方案比較
+  const cmp=document.getElementById('g5-cmp');
+  if(cmp){
+    const L=[['獎勵：綠/智/無障礙/耐震',x=>['green','smart','acc','seis'].map(k=>x.sc[k]||'—').join(' / ')],
+      ['防災型',x=>x.sc.disaster?'是':'否'],
+      ['都更獎勵合計／採計',x=>fmt(x.bonusPct,2)+'% ／ '+fmt(x.usedPct,2)+'%'],
+      ['防災型獎勵',x=>fmt(x.disM2,2)+'m²'],
+      ['總容積（基準容積倍數）',x=>fmt(x.totalV,2)+'m²（'+fmt(x.ratio,3)+'倍）'],
+      ['都更容獎保證金',x=>fmtW(x.depCentral,0)],
+      ['防災型補收保證金',x=>fmtW(x.depDis,0)],
+      ['北市綠建築保證金（應繳）',x=>fmtW(x.glDue,0)],
+      ['可退還保證金合計',x=>fmtW(x.dep,0)],
+      ['綠建築維護費',x=>fmtW(x.maint,1)],
+      ['資金成本（採用方式）',x=>fmtW(x.finCost,1)],
+      ['不可退合計',x=>fmtW(x.maint+x.finCost,1)]];
+    cmp.innerHTML=`<thead><tr><th>項目</th>${R.map((x,i)=>`<th${i===g5Cur?' style="color:#1D9E75;"':''}>${g5esc(x.sc.name)}</th>`).join('')}</tr></thead><tbody>`
+      +L.map(([n,f])=>`<tr${n.includes('合計')?' class="tr-total"':''}><td>${n}</td>${R.map(x=>`<td style="text-align:right;">${ok?f(x):'—'}</td>`).join('')}</tr>`).join('')+'</tbody>';
+  }
+}
+
+function g5Export(){
+  const f={};G5_FIELDS.forEach(id=>{const e=document.getElementById(id);if(e)f[id]=e.value;});
+  G5_CHECKS.forEach(id=>{const e=document.getElementById(id);if(e)f[id]=e.checked?'1':'0';});
+  return{fields:f,parcels:g5Parcels,scens:g5Scens,cur:g5Cur,greenLawTouched:g5GreenLawTouched};
+}
+function g5Import(d){
+  G5_FIELDS.forEach(id=>{const e=document.getElementById(id);if(e)e.value=e.defaultValue||(e.tagName==='SELECT'?e.options[0].value:'');});
+  G5_CHECKS.forEach(id=>{const e=document.getElementById(id);if(e)e.checked=true;});
+  g5Parcels=[];g5Scens=[g5NewScen('方案A')];g5Cur=0;g5GreenLawTouched=false;
+  if(d){
+    Object.entries(d.fields||{}).forEach(([id,v])=>{const e=document.getElementById(id);if(!e)return;if(e.type==='checkbox')e.checked=v!=='0';else e.value=v;});
+    if(Array.isArray(d.parcels))g5Parcels=d.parcels;
+    if(Array.isArray(d.scens)&&d.scens.length)g5Scens=d.scens.map(x=>Object.assign(g5NewScen(''),x));
+    g5Cur=Math.min(d.cur||0,g5Scens.length-1);
+    g5GreenLawTouched=!!d.greenLawTouched;
+  }
+  g5RenderParcels();g5RenderScen();
+}
+G5_FIELDS.concat(G5_CHECKS).forEach(id=>{
+  const e=document.getElementById(id);
+  if(e)e.addEventListener('change',()=>{if(id==='g5-green-law')g5GreenLawTouched=true;calcG5();if(document.getElementById('s2-use-g5')?.checked)calcS2();});
+});
+g5RenderParcels();g5RenderScen();calcG5();
 
 </script>
 </body></html>
