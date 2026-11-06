@@ -228,6 +228,18 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 </div>
 <div class="fx" id="hfb" style="margin-top:8px;"></div>
 <hr class="div"/>
+<p class="sec">規模覆寫（選填：高層建築或已有規劃時使用，空白＝自動推算）</p>
+<div class="g3">
+  <div class="fd"><label>地上樓地板倍數（÷總容積）</label><input type="text" data-expr id="f-abv-mult" placeholder="空白＝5項組成（約1.35）"/><div class="un">倍　高層建築參考 1.6～1.75</div></div>
+  <div class="fd"><label>地上樓層數（手動）</label><input type="text" data-expr id="f-floors-ovr" placeholder="空白＝自動推算"/><div class="un">層（不含屋突）</div></div>
+  <div class="fd"><label>地下樓層數（手動）</label><input type="text" data-expr id="f-bfl-ovr" placeholder="空白＝依車位推算"/><div class="un">層</div></div>
+</div>
+<div class="g3" style="margin-top:10px;">
+  <div class="fd"><label>設置汽車位（選填）</label><input type="text" data-expr id="f-car-set" placeholder="空白＝法定＋自設"/><div class="un">位（用於地下層數與分回車位）</div></div>
+  <div class="fd"><label>設置機車位（選填）</label><input type="text" data-expr id="f-moto-set" placeholder="空白＝法定"/><div class="un">位</div></div>
+  <div class="fd"><label>&nbsp;</label><div class="un" id="ovr-hint" style="margin-top:8px;"></div></div>
+</div>
+<hr class="div"/>
 <p class="sec">地價資料（選填）</p>
 <div class="g3">
   <div class="fd"><label>公告現值</label><input type="text" data-expr id="f-ann" placeholder="0" min="0"/><div class="un">元／平方公尺</div></div>
@@ -879,33 +891,41 @@ function calcS1(){
   const carSzM2=carSzP*P2M,motoSzM2=motoSzP*P2M;
   const b1M2=aM2*excav,b1P=b1M2*M2P;
   const legalNeedP=legalCar*carSzP+legalMoto*motoSzP,legalNeedM2=legalCar*carSzM2+legalMoto*motoSzM2;
-  const bFloors=b1P>0?Math.ceil(legalNeedP/b1P):0;
+  // 規模覆寫（選填）：空白＝自動推算
+  const ovr=id=>{const v=parseFloat(String(document.getElementById(id)?.value??'').replace(/[,，\s]/g,''));return isFinite(v)&&v>0?v:null;};
+  const abvMult=ovr('f-abv-mult'),floorsOvr=ovr('f-floors-ovr'),bflOvr=ovr('f-bfl-ovr');
+  const carSet=ovr('f-car-set'),motoSet=ovr('f-moto-set');
+  const planCar=carSet!=null?Math.round(carSet):null,planMoto=motoSet!=null?Math.round(motoSet):legalMoto;
+  const needP=planCar!=null?planCar*carSzP+planMoto*motoSzP:legalNeedP+(motoSet!=null?(planMoto-legalMoto)*motoSzP:0);
+  const needM2=needP*P2M;
+  const bFloors=bflOvr!=null?Math.round(bflOvr):(b1P>0?Math.ceil(needP/b1P):0);
   const baseM2=bFloors*b1M2,baseP=baseM2*M2P;
-  const remainP=baseP-legalNeedP;
-  const selfCar=Math.max(0,Math.floor(remainP/carSzP)),totalCar=legalCar+selfCar,totalMoto=legalMoto;
+  const remainP=baseP-needP;
+  const selfCar=planCar!=null?Math.max(0,planCar-legalCar):Math.max(0,Math.floor(remainP/carSzP));
+  const totalCar=planCar!=null?planCar:legalCar+selfCar,totalMoto=planMoto;
 
-  // 樓層：以地上層面積/（基地×建蔽）為基，取ceil，再受高度限制
-  // NOTE: aboveGroundM2 computed below; need to forward-compute for floor calc
-  const _a1=totalM2,_a2=_a1*0.15,_a3=(_a1+_a2)*5/95,_a4=(_a1+_a2+_a3)*0.10,_a5=aM2*bcr*0.125;
-  const _abvGnd=_a1+_a2+_a3+_a4+_a5;
-  const farFloat=maxBM2>0?_abvGnd/maxBM2:null,farInt=farFloat?Math.ceil(farFloat):null;
-  const Hlimit=!isNaN(W)?getH(city,zone,W,D):null;
-  const Hformula=!isNaN(W)?(city==='taipei'?5*(W/2+D):city==='newtaipei'?1.5*(W+D)+6:1.5*(W+D)):null;
-  const hFloors=Hlimit?hToFloors(Hlimit,h1,hs):null;
-  let finalFloors=farInt,hLimited=false;
-  if(hFloors&&farInt&&hFloors<farInt){finalFloors=hFloors;hLimited=true;}
-  else if(hFloors&&!farInt)finalFloors=hFloors;
-  const unusedM2=hLimited&&finalFloors&&maxBM2?totalM2-finalFloors*maxBM2:null;
-
-  // 地上層樓地板面積（5項組成）
+  // 地上層樓地板面積（5項組成）；有填倍數時改用「總容積 × 倍數」
   const area1=totalM2;                                  // (1) 容積樓地板
   const area2=totalM2*0.15;                             // (2) 免計容積
   const area3=(area1+area2)*5/95;                       // (3) 地上層梯廳
   const area4=(area1+area2+area3)*0.10;                 // (4) 陽台
   const area5=aM2*bcr*0.125;                            // (5) 最大屋突
-  const aboveGroundM2=area1+area2+area3+area4+area5;    // 地上層面積
+  const autoAbvM2=area1+area2+area3+area4+area5;
+  const aboveGroundM2=abvMult!=null?totalM2*abvMult:autoAbvM2; // 地上層面積
+
+  // 樓層：以地上層面積/（基地×建蔽）為基，取ceil，再受高度限制；有手動樓層數時直接採用
+  const farFloat=maxBM2>0?aboveGroundM2/maxBM2:null,farInt=farFloat?Math.ceil(farFloat):null;
+  const Hlimit=!isNaN(W)?getH(city,zone,W,D):null;
+  const Hformula=!isNaN(W)?(city==='taipei'?5*(W/2+D):city==='newtaipei'?1.5*(W+D)+6:1.5*(W+D)):null;
+  const hFloors=Hlimit?hToFloors(Hlimit,h1,hs):null;
+  let finalFloors=farInt,hLimited=false;
+  if(floorsOvr!=null){finalFloors=Math.round(floorsOvr);}
+  else if(hFloors&&farInt&&hFloors<farInt){finalFloors=hFloors;hLimited=true;}
+  else if(hFloors&&!farInt)finalFloors=hFloors;
+  const unusedM2=hLimited&&finalFloors&&maxBM2?totalM2-finalFloors*maxBM2:null;
+  const hOver=floorsOvr!=null&&hFloors&&finalFloors>hFloors;
   const grandM2=aboveGroundM2+baseM2;                   // 全棟總樓地板
-  const exemptM2=area2,nonParkM2=baseM2-legalNeedM2;
+  const exemptM2=area2,nonParkM2=baseM2-needM2;
 
   // Update state
   ST.aM2=aM2;ST.aPing=aM2*M2P;ST.totalM2=totalM2;ST.totalPing=totalM2*M2P;
@@ -930,10 +950,12 @@ function calcS1(){
   s('r-salefar',saleFAR?'銷售容積率 '+fmt(saleFAR,2)+'（每坪土地創造 '+fmt(saleFAR,2)+' 銷售坪）':'');
   s('r-base',ping(baseM2));s('r-base-s',bFloors+'層　'+m2s(baseM2));
   s('r-grand',ping(grandM2));s('r-grand-s',`地上${ping(aboveGroundM2)} + 地下${ping(baseM2)}`);
-  s('r-floors',finalFloors?finalFloors+'F':'—');s('r-floors-s',hLimited?'⚠ 高度為限制因素':'容積為限制因素');
+  s('r-floors',finalFloors?finalFloors+'F':'—');s('r-floors-s',floorsOvr!=null?'手動輸入'+(hOver?'（⚠ 超過高度限制樓層）':''):hLimited?'⚠ 高度為限制因素':'容積為限制因素');
   s('r-hfloors',hFloors?hFloors+'F':'—');s('r-hfloors-s',Hlimit?`H=${fmt(Hlimit,1)}m → ${hFloors}F`:'未輸入道路寬度');
-  s('r-car',totalCar+'位');s('r-car-s',`法定${legalCar}＋自設${selfCar}`);
-  s('r-moto',totalMoto+'位');s('r-moto-s',`法定（容積+戶數取大）`);
+  s('r-car',totalCar+'位');s('r-car-s',planCar!=null?`設置（法定${legalCar}）`:`法定${legalCar}＋自設${selfCar}`);
+  s('r-moto',totalMoto+'位');s('r-moto-s',motoSet!=null?`設置（法定${legalMoto}）`:`法定（容積+戶數取大）`);
+  const oh=[];if(abvMult!=null)oh.push('地上×'+fmt(abvMult,3));if(floorsOvr!=null)oh.push('地上'+finalFloors+'F');if(bflOvr!=null)oh.push('地下'+bFloors+'層');if(planCar!=null)oh.push('汽車'+planCar+'位');if(motoSet!=null)oh.push('機車'+planMoto+'位');
+  s('ovr-hint',oh.length?'✓ 已覆寫：'+oh.join('、'):'未覆寫（全部自動推算）');
   s('b-area',m2s(aM2)+' ('+ping(aM2)+')');
   s('b-legal',ping(legalM2)+' ('+m2s(legalM2)+')');
   s('b-bonus',bonM2>0?'+'+ping(bonM2)+' ('+m2s(bonM2)+')':'0');
@@ -958,26 +980,29 @@ function calcS1(){
   s('b-ffl2',finalFloors?finalFloors+'F'+(hLimited?' (⚠ 高度限制)':''):'—');
   s('b-b1',ping(b1M2)+' ('+m2s(b1M2)+')');
   s('b-carl',legalCar+'位');s('b-motol',legalMoto+'位');
-  s('b-pneed',fmt(legalNeedP)+'坪 ('+m2s(legalNeedM2)+')');
-  s('b-bfl',bFloors+'層');
+  s('b-pneed',fmt(needP)+'坪 ('+m2s(needM2)+')'+(planCar!=null||motoSet!=null?'（依設置車位）':''));
+  s('b-bfl',bFloors+'層'+(bflOvr!=null?'（手動）':''));
   s('b-basm',ping(baseM2)+' ('+m2s(baseM2)+') = '+bFloors+'層 × '+ping(b1M2));
-  s('b-cars',selfCar+'位');s('b-cart',totalCar+'位（法定'+legalCar+'＋自設'+selfCar+'）');
+  s('b-cars',selfCar+'位');s('b-cart',totalCar+'位（法定'+legalCar+'＋自設'+selfCar+'）'+(planCar!=null?'（依設置車位）':''));
   // 地上層面積拆解顯示
   s('b-area1',ping(area1)+' ('+m2s(area1)+')');
   s('b-area2','+'+ping(area2)+' ('+m2s(area2)+')');
   s('b-area3','+'+ping(area3)+' ('+m2s(area3)+')');
   s('b-area4','+'+ping(area4)+' ('+m2s(area4)+')');
   s('b-area5','+'+ping(area5)+' ('+m2s(area5)+')');
-  s('b-abvgnd',ping(aboveGroundM2)+' ('+m2s(aboveGroundM2)+')');
+  s('b-abvgnd',ping(aboveGroundM2)+' ('+m2s(aboveGroundM2)+')'+(abvMult!=null?`＝總容積×${fmt(abvMult,3)}（5項組成僅供對照：${ping(autoAbvM2)}）`:''));
   s('b-grand',ping(grandM2)+' ('+m2s(grandM2)+')');
-  // Bar chart: area1~area5 + base
-  pw('bar-legal',area1/grandM2*100);
-  pw('bar-bonus',area2/grandM2*100);
-  pw('bar-xfer', area3/grandM2*100);
-  pw('bar-bal',  area4/grandM2*100);
-  pw('bar-com',  area5/grandM2*100);
+  // Bar chart: area1~area5 + base（倍數覆寫時，5項依比例縮放）
+  const sc=autoAbvM2>0?aboveGroundM2/autoAbvM2:1;
+  pw('bar-legal',area1*sc/grandM2*100);
+  pw('bar-bonus',area2*sc/grandM2*100);
+  pw('bar-xfer', area3*sc/grandM2*100);
+  pw('bar-bal',  area4*sc/grandM2*100);
+  pw('bar-com',  area5*sc/grandM2*100);
   pw('bar-base', baseM2/grandM2*100);
   const alerts=[];
+  if(hOver)alerts.push({c:'al-w',m:`⚠ 手動樓層${finalFloors}F超過道路寬度推算的高度限制樓層${hFloors}F，請確認是否適用其他高度規定。`});
+  if(bflOvr!=null&&nonParkM2<0)alerts.push({c:'al-w',m:`⚠ 手動地下${bFloors}層（${ping(baseM2)}）不足以容納停車需求（${fmt(needP)}坪）。`});
   if(B*100>15)alerts.push({c:'al-w',m:`⚠ 陽台比例${fmt(B*100,1)}%超過法規上限15%，超出部分須計入容積。`});
   if(hLimited&&unusedM2>0)alerts.push({c:'al-w',m:`⚠ 高度為限制因素：採用${finalFloors}F，剩餘未用容積約${ping(unusedM2)}。`});
   if(nonParkM2>=0){
@@ -1748,7 +1773,7 @@ document.getElementById('f-zone').addEventListener('change',function(){
   document.getElementById(id)?.addEventListener('input',function(){this.classList.remove('auto');});
 });
 document.getElementById('f-city').addEventListener('change',function(){updateUI1();calcS1();});
-['f-area','f-exist','f-far','f-bcr','f-bonus','f-transfer','f-units','f-parksize','f-motosize','f-excavate','f-W','f-D','f-h1','f-hs','f-ann','f-lp','f-mkt','f-puse','f-comm-m2','f-comm-cls','f-unitmin'].forEach(id=>{
+['f-area','f-exist','f-far','f-bcr','f-bonus','f-transfer','f-units','f-parksize','f-motosize','f-excavate','f-W','f-D','f-h1','f-hs','f-ann','f-lp','f-mkt','f-puse','f-comm-m2','f-comm-cls','f-unitmin','f-abv-mult','f-floors-ovr','f-bfl-ovr','f-car-set','f-moto-set'].forEach(id=>{
   const el=document.getElementById(id);if(el)el.addEventListener('change',calcS1);
 });
 
@@ -1866,6 +1891,7 @@ const ALL_FIELD_IDS=[
   'f-puse','f-comm-m2','f-comm-cls',
   'f-W','f-D','f-h1','f-hs',
   'f-ann','f-lp','f-mkt',
+  'f-abv-mult','f-floors-ovr','f-bfl-ovr','f-car-set','f-moto-set',
   // Step 2 shared
   's2-pprice','s2-cprice','s2-struct','s2-sr','s2-mr',
   's2-vat','s2-smart',
