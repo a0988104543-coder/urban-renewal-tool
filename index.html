@@ -898,9 +898,11 @@ function calcS1(){
   const planCar=carSet!=null?Math.round(carSet):null,planMoto=motoSet!=null?Math.round(motoSet):legalMoto;
   const needP=planCar!=null?planCar*carSzP+planMoto*motoSzP:legalNeedP+(motoSet!=null?(planMoto-legalMoto)*motoSzP:0);
   const needM2=needP*P2M;
-  const bFloors=bflOvr!=null?Math.round(bflOvr):(b1P>0?Math.ceil(needP/b1P):0);
+  // 地下室先預留 15% 非停車空間（機電、梯間、水箱等），其餘才配置車位
+  const NONPARK=0.15,usableB1P=b1P*(1-NONPARK);
+  const bFloors=bflOvr!=null?Math.round(bflOvr):(usableB1P>0?Math.ceil(needP/usableB1P):0);
   const baseM2=bFloors*b1M2,baseP=baseM2*M2P;
-  const remainP=baseP-needP;
+  const remainP=baseP*(1-NONPARK)-needP;
   const selfCar=planCar!=null?Math.max(0,planCar-legalCar):Math.max(0,Math.floor(remainP/carSzP));
   const totalCar=planCar!=null?planCar:legalCar+selfCar,totalMoto=planMoto;
 
@@ -925,7 +927,7 @@ function calcS1(){
   const unusedM2=hLimited&&finalFloors&&maxBM2?totalM2-finalFloors*maxBM2:null;
   const hOver=floorsOvr!=null&&hFloors&&finalFloors>hFloors;
   const grandM2=aboveGroundM2+baseM2;                   // 全棟總樓地板
-  const exemptM2=area2,nonParkM2=baseM2-needM2;
+  const exemptM2=baseM2*NONPARK,nonParkM2=baseM2-needM2-selfCar*carSzM2; // 非停車面積須扣除自設車位
 
   // Update state
   ST.aM2=aM2;ST.aPing=aM2*M2P;ST.totalM2=totalM2;ST.totalPing=totalM2*M2P;
@@ -1002,12 +1004,11 @@ function calcS1(){
   pw('bar-base', baseM2/grandM2*100);
   const alerts=[];
   if(hOver)alerts.push({c:'al-w',m:`⚠ 手動樓層${finalFloors}F超過道路寬度推算的高度限制樓層${hFloors}F，請確認是否適用其他高度規定。`});
-  if(bflOvr!=null&&nonParkM2<0)alerts.push({c:'al-w',m:`⚠ 手動地下${bFloors}層（${ping(baseM2)}）不足以容納停車需求（${fmt(needP)}坪）。`});
+  if(bFloors>0&&remainP<0)alerts.push({c:'al-w',m:`⚠ 地下${bFloors}層（${ping(baseM2)}）預留15%非停車空間後，可停車面積${fmt(baseP*(1-NONPARK))}坪，不足以容納停車需求（${fmt(needP)}坪），差${fmt(-remainP)}坪。`});
   if(B*100>15)alerts.push({c:'al-w',m:`⚠ 陽台比例${fmt(B*100,1)}%超過法規上限15%，超出部分須計入容積。`});
   if(hLimited&&unusedM2>0)alerts.push({c:'al-w',m:`⚠ 高度為限制因素：採用${finalFloors}F，剩餘未用容積約${ping(unusedM2)}。`});
-  if(nonParkM2>=0){
-    if(nonParkM2<=exemptM2)alerts.push({c:'al-o',m:`✓ 地下室非停車面積約${ping(nonParkM2)}，在15%免計容積額度（${ping(exemptM2)}）內。`});
-    else alerts.push({c:'al-i',m:`ℹ 地下室非停車面積約${ping(nonParkM2)}，超過15%免計額度（${ping(exemptM2)}），建議確認規劃。`});
+  if(bFloors>0&&remainP>=0){
+    alerts.push({c:'al-o',m:`✓ 地下室已預留15%非停車空間（${ping(exemptM2)}），扣除法定及自設${selfCar}位車位後，非停車面積約${ping(nonParkM2)}。`});
   }
   document.getElementById('s1-alerts').innerHTML=alerts.map(a=>`<div class="al ${a.c}" style="margin-bottom:8px;">${a.m}</div>`).join('');
   if(ann>0)s('l-ann','$'+fmtI(ann*aM2)+'元');
