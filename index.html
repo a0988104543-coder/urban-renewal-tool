@@ -352,19 +352,25 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <div class="fd">
     <div class="cb-row" style="margin-bottom:4px;">
       <input type="checkbox" id="s2-vat-on" checked onchange="calcS2()"/>
-      <label for="s2-vat-on">營業稅（列入成本）</label>
+      <label for="s2-vat-on">自售營業稅（房屋部分，價內稅）</label>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
       <input type="text" data-expr id="s2-vat" value="5" min="0" max="20" step="0.1" style="font-size:13px;padding:7px 10px;border-radius:6px;border:1px solid #ddd;width:80px;"/>
-      <div class="un">%（建商分回銷售額）</div>
+      <div class="un">%（營業稅率；土地免稅）</div>
     </div>
   </div>
   <div class="fd">
     <div class="cb-row" style="margin-bottom:4px;">
       <input type="checkbox" id="s2-proptax-on" checked onchange="calcS2()"/>
-      <label for="s2-proptax-on">物交稅（列入成本，5%固定）</label>
+      <label for="s2-proptax-on">合建分屋營業稅（地主分回房屋部分）</label>
     </div>
+    <div class="cb-row" style="margin-bottom:4px;">
+      <input type="checkbox" id="s2-input-on" checked onchange="calcS2()"/>
+      <label for="s2-input-on">扣抵進項稅額</label>
+    </div>
+    <div class="un">進項＝（營造＋建築師＋管銷＋銷售＋顧問費）÷(1＋稅率)×稅率</div>
   </div>
+  <div class="fd"><label>房屋價值比例</label><input type="text" data-expr id="s2-house" value="45"/><div class="un">%（售價中房屋部分，餘為土地；預設45%，可依施行細則§21房屋評定現值：土地公告現值比例調整）</div></div>
   <div class="fd"><label>智慧建築費率</label><input type="text" data-expr id="s2-smart" value="6" min="6" max="8" step="0.5"/><div class="un">%（基地×法定容積×費率×公告現值×0.7，預設6%）</div></div>
 </div>
 <div class="cb-row" style="margin-top:10px;">
@@ -1119,6 +1125,17 @@ function calcS2(){
   const vatR=gf('s2-vat')/100;
   const vatOn=document.getElementById('s2-vat-on')?.checked!==false;
   const propTaxOn=document.getElementById('s2-proptax-on')?.checked!==false;
+  const inputOn=document.getElementById('s2-input-on')?.checked!==false;
+  const hv=parseFloat(document.getElementById('s2-house')?.value);
+  const houseR=isFinite(hv)?Math.min(100,Math.max(0,hv))/100:0.45;
+  // 加值型營業稅：自售銷項（房屋部分，價內）＋合建分屋銷項（地主分回房屋部分）－進項扣抵
+  function calcVAT(saleRev,swapRev,inputBase){
+    const vatY=vatOn?saleRev*houseR/(1+vatR)*vatR:0;
+    const propTax=propTaxOn?swapRev*houseR*vatR:0;
+    const inVatRaw=inputOn?inputBase/(1+vatR)*vatR:0;
+    const inVat=Math.min(inVatRaw,vatY+propTax);
+    return{vatY,propTax,inVat,inVatRaw,netVat:vatY+propTax-inVat};
+  }
 
   const {aM2,aPing,totalM2,totalPing,salePing,grandM2,grandPing,totalCar,finalFloors,city,far,xfrR,K}=ST;
   const annPrice=gf("f-ann"); // 元/m²（公告現值）
@@ -1202,12 +1219,13 @@ function calcS2(){
     const buildLoan=buildBase*buildLTV,buildInt=buildLoan*buildIR*buildPeriod*0.5;
 
     const {propTax:_sl_propTax,greenMaint:sl_greenMaint,greenDeposit:sl_greenDeposit,greenTotal:sl_greenTotal,smartDeposit:sl_smartDeposit}=calcNewTaxes(c,salesRev,c.legalCostWan,c.fundY);
-    const sl_propTax=propTaxOn?_sl_propTax:0;
-    const totalCost=landCost+brokerFee+landTax+deedTax+constCost+c.archY+c.fundY+salesCost+mgmtCost+consultFee+tdrCost+soilInt+buildInt+sl_propTax+sl_greenTotal; // 保證金只列示，不計成本
+    const sl_vat=calcVAT(salesRev,0,constCost+c.archY+mgmtCost+salesCost+consultFee);
+    const sl_propTax=sl_vat.propTax;
+    const totalCost=landCost+brokerFee+landTax+deedTax+constCost+c.archY+c.fundY+salesCost+mgmtCost+consultFee+tdrCost+soilInt+buildInt+sl_vat.netVat+sl_greenTotal; // 保證金只列示，不計成本
     const netProfit=salesRev-totalCost;
     const sl_depCash=depCash(c);
     const equity=totalCost-soilLoan-buildLoan; // 保證金不計入自有資金
-    res.self={...c,depCash:sl_depCash,landCost,brokerFee,landTax,deedTax,constCost,consultFee,tdrCost,sl_tdr1,sl_tdr2,salesRev,salesCost,mgmtCost,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,propTax:sl_propTax,greenMaint:sl_greenMaint,greenDeposit:sl_greenDeposit,greenTotal:sl_greenTotal,smartDeposit:sl_smartDeposit,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,vatY:0,
+    res.self={...c,depCash:sl_depCash,landCost,brokerFee,landTax,deedTax,constCost,consultFee,tdrCost,sl_tdr1,sl_tdr2,salesRev,salesCost,mgmtCost,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,propTax:sl_propTax,greenMaint:sl_greenMaint,greenDeposit:sl_greenDeposit,greenTotal:sl_greenTotal,smartDeposit:sl_smartDeposit,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,vatY:sl_vat.vatY,inVat:sl_vat.inVat,vatSaleBase:salesRev,vatSwapBase:0,vatInBase:constCost+c.archY+mgmtCost+salesCost+consultFee,
       _sl_land:gf('sl-land'),_sl_const:gf('sl-const'),_sl_sir:soilIR*100,_sl_bir:buildIR*100,_sl_sltv:soilLTV*100,_sl_bltv:buildLTV*100,_sl_sp:soilPeriod,_sl_bp:buildPeriod};
   }
 
@@ -1263,10 +1281,10 @@ function calcS2(){
     const buildLoan=buildBase*buildLTV,buildInt=buildLoan*buildIR*buildPeriod*0.5;
 
     const {propTax:_ub_propTax,greenMaint:ub_greenMaint,greenDeposit:ub_greenDeposit,greenTotal:ub_greenTotal,smartDeposit:ub_smartDeposit}=calcNewTaxes(c,builderRev,c.legalCostWan,c.fundY);
-    const ub_propTax=propTaxOn?_ub_propTax:0;
-    const _vatY_raw=builderRev*vatR;
-    const vatY=vatOn?_vatY_raw:0;
-    const totalCost=brokerY+evictComp+rentSub+constCost+c.archY+c.fundY+salesCost+mgmtCost+consultFee+trustFee+tdrCost+soilInt+buildInt+vatY+ub_propTax+ub_greenTotal; // 保證金只列示，不計成本
+    const ub_inBase=constCost+c.archY+mgmtCost+salesCost+consultFee;
+    const ub_vat=calcVAT(builderRev,ownerRev,ub_inBase);
+    const ub_propTax=ub_vat.propTax,vatY=ub_vat.vatY;
+    const totalCost=brokerY+evictComp+rentSub+constCost+c.archY+c.fundY+salesCost+mgmtCost+consultFee+trustFee+tdrCost+soilInt+buildInt+ub_vat.netVat+ub_greenTotal; // 保證金只列示，不計成本
     const netProfit=builderRev-totalCost;
     const ub_depCash=depCash(c);
     const equity=totalCost-soilLoan-buildLoan; // 保證金不計入自有資金
@@ -1275,7 +1293,7 @@ function calcS2(){
     const ownerNet=ownerRev-oldBuildValue;
     const ownerROE=oldBuildValue>0?ownerNet/oldBuildValue:null;
 
-    res.urban={...c,depCash:ub_depCash,brokerY,evictComp,rentSub,constCost,consultFee,trustFee,tdrCost,ub_tdr1,ub_tdr2,mgmtCost,builderRev,builderSaleP,builderCar,ownerRev,ownerSaleP,ownerCar,salesCost,vatY,propTax:ub_propTax,greenMaint:ub_greenMaint,greenDeposit:ub_greenDeposit,greenTotal:ub_greenTotal,smartDeposit:ub_smartDeposit,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,mergerR,oldBuildValue,ownerNet,ownerROE,
+    res.urban={...c,depCash:ub_depCash,brokerY,evictComp,rentSub,constCost,consultFee,trustFee,tdrCost,ub_tdr1,ub_tdr2,mgmtCost,builderRev,builderSaleP,builderCar,ownerRev,ownerSaleP,ownerCar,salesCost,vatY,propTax:ub_propTax,inVat:ub_vat.inVat,vatSaleBase:builderRev,vatSwapBase:ownerRev,vatInBase:ub_inBase,greenMaint:ub_greenMaint,greenDeposit:ub_greenDeposit,greenTotal:ub_greenTotal,smartDeposit:ub_smartDeposit,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,mergerR,oldBuildValue,ownerNet,ownerROE,
       _ub_const:gf('ub-const'),_ub_sir:soilIR*100,_ub_bir:buildIR*100,_ub_sltv:soilLTV*100,_ub_bltv:buildLTV*100,_ub_sp:soilPeriod,_ub_bp:buildPeriod};
   }
 
@@ -1300,8 +1318,10 @@ function calcS2(){
     const buildBase=constCost+c.archY+c.fundY;
     const buildLoan=buildBase*buildLTV,buildInt=buildLoan*buildIR*buildPeriod*0.5;
     const {propTax:_cm_propTax,greenMaint:cm_greenMaint,greenDeposit:cm_greenDeposit,greenTotal:cm_greenTotal,smartDeposit:cm_smartDeposit}=calcNewTaxes(c,totalSalesRev,c.legalCostWan,c.fundY);
-    const cm_propTax=propTaxOn?_cm_propTax:0;
-    const ownerSelfCost=constCost+c.archY+c.fundY+salesCost+mgmtCost+tdrCost+buildInt+cm_propTax+cm_greenTotal; // 保證金只列示，不計成本
+    const cm_inBase=constCost+c.archY+mgmtCost+salesCost;
+    const cm_vat=calcVAT(totalSalesRev,0,cm_inBase);
+    const cm_propTax=cm_vat.propTax;
+    const ownerSelfCost=constCost+c.archY+c.fundY+salesCost+mgmtCost+tdrCost+buildInt+cm_vat.netVat+cm_greenTotal; // 保證金只列示，不計成本
     const ownerTotalPay=ownerSelfCost+commFee;
     const ownerNet=totalSalesRev-ownerTotalPay;
     const oldBuildValue=oldPricePerPing*oldFloorPing;
@@ -1309,7 +1329,7 @@ function calcS2(){
     const ownerInvest=oldBuildValue+commFee+ownerSelfCost;
     const ownerROE=ownerInvest>0?ownerNet/ownerInvest:null;
 
-    res.comm={...c,depCash:cm_depCash,commRate,commFee,tdrCost,cm_tdr1,cm_tdr2,totalSalesRev,constCost,mgmtCost,salesCost,propTax:cm_propTax,greenMaint:cm_greenMaint,greenDeposit:cm_greenDeposit,greenTotal:cm_greenTotal,smartDeposit:cm_smartDeposit,buildBase,buildLoan,buildInt,ownerSelfCost,ownerTotalPay,ownerNet,oldBuildValue,ownerInvest,ownerROE,
+    res.comm={...c,depCash:cm_depCash,commRate,commFee,tdrCost,cm_tdr1,cm_tdr2,totalSalesRev,constCost,mgmtCost,salesCost,propTax:cm_propTax,vatY:cm_vat.vatY,inVat:cm_vat.inVat,vatSaleBase:totalSalesRev,vatSwapBase:0,vatInBase:cm_inBase,greenMaint:cm_greenMaint,greenDeposit:cm_greenDeposit,greenTotal:cm_greenTotal,smartDeposit:cm_smartDeposit,buildBase,buildLoan,buildInt,ownerSelfCost,ownerTotalPay,ownerNet,oldBuildValue,ownerInvest,ownerROE,
       _cm_const:gf('cm-const'),_cm_bir:buildIR*100,_cm_bltv:buildLTV*100,_cm_bp:buildPeriod};
   }
 
@@ -1399,12 +1419,18 @@ function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
       r=>`基數${fmtW(r.buildBase,0)}×${r._ub_bltv}%×${r._ub_bir}%×${r._ub_bp}年×50%`,
       r=>`基數${fmtW(r.buildBase,0)}×${r._cm_bltv}%×${r._cm_bir}%×${r._cm_bp}年×50%`],
     ['稅費'],
-    ['　營業稅',null,r=>r.vatY,null,
-      null,r=>`建商分回${fmtW(r.builderRev,0)} × ${gf('s2-vat')}%`,null],
-    ['　物交稅',r=>r.propTax,r=>r.propTax,r=>r.propTax,
-      r=>`建商總銷${fmtW(r.salesRev,0)} × 5%`,
-      r=>`建商分回${fmtW(r.builderRev,0)} × 5%`,
-      r=>`地主總銷${fmtW(r.totalSalesRev,0)} × 5%`],
+    ['　自售營業稅（房屋部分）',r=>r.vatY,r=>r.vatY,r=>r.vatY,
+      r=>`自售${fmtW(r.vatSaleBase,0)} × 房屋${gf('s2-house')}% ÷ (1＋${gf('s2-vat')}%) × ${gf('s2-vat')}%`,
+      r=>`建商分回${fmtW(r.vatSaleBase,0)} × 房屋${gf('s2-house')}% ÷ (1＋${gf('s2-vat')}%) × ${gf('s2-vat')}%`,
+      r=>`總銷${fmtW(r.vatSaleBase,0)} × 房屋${gf('s2-house')}% ÷ (1＋${gf('s2-vat')}%) × ${gf('s2-vat')}%`],
+    ['　合建分屋營業稅（地主分回房屋部分）',r=>r.propTax,r=>r.propTax,r=>r.propTax,
+      r=>'無（自地自建）',
+      r=>`地主分回${fmtW(r.vatSwapBase,0)} × 房屋${gf('s2-house')}% × ${gf('s2-vat')}%`,
+      r=>'無（委託興建）'],
+    ['　進項稅額扣抵',r=>-r.inVat,r=>-r.inVat,r=>-r.inVat,
+      r=>`進項基數${fmtW(r.vatInBase,0)} ÷ (1＋${gf('s2-vat')}%) × ${gf('s2-vat')}%（以銷項為限）`,
+      r=>`進項基數${fmtW(r.vatInBase,0)} ÷ (1＋${gf('s2-vat')}%) × ${gf('s2-vat')}%（以銷項為限）`,
+      r=>`進項基數${fmtW(r.vatInBase,0)} ÷ (1＋${gf('s2-vat')}%) × ${gf('s2-vat')}%（以銷項為限）`],
     [useG5?'　標章保證金資金成本＋綠建築維護費（⑤頁）':'　綠建築維護費',r=>r.greenTotal,r=>r.greenTotal,r=>r.greenTotal,
       r=>greenDet(r),r=>greenDet(r),r=>greenDet(r)],
     ...(useG5?[['　（參考）標章保證金本金：可退，不計成本與自有資金',r=>r.depCash,r=>r.depCash,r=>r.depCash,
@@ -1781,13 +1807,13 @@ document.getElementById('f-city').addEventListener('change',function(){updateUI1
 });
 
 // Step 2 listeners
-['s2-pprice','s2-cprice','s2-struct','s2-sr','s2-mr','s2-vat','s2-smart',
+['s2-pprice','s2-cprice','s2-struct','s2-sr','s2-mr','s2-vat','s2-smart','s2-house',
  'sl-land','sl-broker','sl-ltax','sl-dtax','sl-const','sl-sir','sl-bir','sl-sltv','sl-bltv','sl-sp','sl-bp',
  'ub-broker','ub-units','ub-evict','ub-oldfloor','ub-rent','ub-p-legal','ub-p-bonus','ub-p-tdr','ub-const','ub-oldprice','ub-sir','ub-bir','ub-sltv','ub-bltv','ub-sp','ub-bp',
  'cm-rate','cm-const','cm-oldprice','cm-oldfloor','cm-bir','cm-bltv','cm-bp','ub-tdr-f1','ub-tdr-f2'].forEach(id=>{
   const el=document.getElementById(id);if(el)el.addEventListener('change',calcS2);
 });
-['s2-vat-on','s2-proptax-on'].forEach(id=>{
+['s2-vat-on','s2-proptax-on','s2-input-on'].forEach(id=>{
   const el=document.getElementById(id);if(el)el.addEventListener('change',calcS2);
 });
 ['s2-pself','s2-purb','s2-pcomm'].forEach(id=>{
@@ -1897,7 +1923,7 @@ const ALL_FIELD_IDS=[
   'f-abv-mult','f-floors-ovr','f-bfl-ovr','f-car-set','f-moto-set',
   // Step 2 shared
   's2-pprice','s2-cprice','s2-struct','s2-sr','s2-mr',
-  's2-vat','s2-smart',
+  's2-vat','s2-smart','s2-house',
   's2-pself','s2-purb','s2-pcomm',
   // Step 2 self
   'sl-land','sl-broker','sl-ltax','sl-dtax','sl-const',
@@ -1925,7 +1951,7 @@ function saveProject(){
     const el=document.getElementById(id);
     if(el)data.inputs[id]=el.value;
   });
-  ['s2-vat-on','s2-proptax-on','s2-use-g5','f-unitmin'].forEach(id=>{
+  ['s2-vat-on','s2-proptax-on','s2-input-on','s2-use-g5','f-unitmin'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)data.inputs[id]=el.checked?'1':'0';
   });
