@@ -488,7 +488,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <div class="fd" style="margin-bottom:6px;"><label>舊建物戶數</label><input type="text" data-expr id="ub-units" value="0" min="0" step="1"/><div class="un">戶</div></div>
   <div class="fd" style="margin-bottom:6px;"><label>拆遷補償／戶</label><input type="text" data-expr id="ub-evict" value="5" min="0" step="0.5"/><div class="un">萬元／戶</div></div>
   <div class="fd" style="margin-bottom:6px;"><label>舊建物總樓地板面積</label><input type="text" data-expr id="ub-oldfloor" value="0" min="0"/><div class="un">坪</div></div>
-  <div class="fd" style="margin-bottom:6px;"><label>月租補貼費率</label><input type="text" data-expr id="ub-rent" value="0.1" min="0" step="0.01"/><div class="un">萬元／坪／月（舊樓×0.9×費率×期間×12）</div></div>
+  <div class="fd" style="margin-bottom:6px;"><label>月租補貼費率</label><input type="text" data-expr id="ub-rent" value="0.1" min="0" step="0.01"/><div class="un">萬元／坪／月（舊建物權狀坪×費率×期間×12）</div></div>
   <div class="fd" style="margin-bottom:10px;"><label>舊建物估價（地主ROE用）</label><input type="text" data-expr id="ub-oldprice" placeholder="例：70" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
   <!-- 其他費用 -->
   <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:6px;letter-spacing:.05em;">其他費用</div>
@@ -1239,7 +1239,7 @@ function calcS2(){
     const rentFloor=gf('ub-oldfloor');
     const rentRate=gf('ub-rent')*WAN;             // 萬/坪/月→元/坪/月
     const buildPeriod=gf('ub-bp'),soilPeriod=gf('ub-sp');
-    const rentSub=rentFloor*0.9*rentRate*buildPeriod*12;
+    const rentSub=rentFloor*rentRate*buildPeriod*12; // 依舊建物權狀坪計算（與④頁一致）
     // 合建比由三參數推算
     const bonR2v=ST.bonR||0,xfrR2v=ST.xfrR||0;
     const denom=1+bonR2v+xfrR2v;
@@ -1379,7 +1379,7 @@ function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
     ['　拆遷補償',null,r=>r.evictComp,null,
       null,r=>`${gf('ub-units')}戶 × ${gf('ub-evict')}萬`,null],
     ['　租金補貼',null,r=>r.rentSub,null,
-      null,r=>`舊樓地板${gf('ub-oldfloor')}坪 × 0.9 × ${gf('ub-rent')}萬/月 × ${gf('ub-bp')}年`,null],
+      null,r=>`舊建物權狀${gf('ub-oldfloor')}坪 × ${gf('ub-rent')}萬/月 × ${gf('ub-bp')}年`,null],
     ['　容積移轉費用',r=>r.tdrCost,r=>r.tdrCost,r=>r.tdrCost,
       r=>`Item1(基地×容積率×容移×0.5×公告現值×0.25) ${fmtW(r.sl_tdr1,1)} + Item2(售價×0.85-造價)×基地坪×容積率×容移×0.5 ${fmtW(r.sl_tdr2,1)}`,
       r=>`Item1 ${fmtW(r.ub_tdr1,1)} + Item2 ${fmtW(r.ub_tdr2,1)}`,
