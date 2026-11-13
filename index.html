@@ -148,15 +148,15 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
       <div style="font-size:16px;font-weight:700;color:#185FA5;">📤 匯出圖卡（LINE 用，1080×1350）</div>
       <button onclick="closeExport()" style="border:none;background:#eee;border-radius:6px;padding:4px 10px;cursor:pointer;">✕ 關閉</button>
     </div>
-    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-      <label class="cb-row" style="margin:0;"><input type="checkbox" id="exp-b" checked/> 建商版（內部，3張）</label>
-      <label class="cb-row" style="margin:0;"><input type="checkbox" id="exp-o" checked/> 住戶條件版（對外，3張）</label>
-      <label style="font-size:12px;">住戶對照坪數：<input type="text" id="exp-tiers" value="20,30,40,50,60" style="width:140px;"/></label>
-      <button class="btn-c" onclick="buildExport()" style="padding:5px 14px;">產生預覽</button>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+      <button id="exp-btn-b" onclick="selectExport('b')" style="flex:1;min-width:200px;padding:12px 16px;font-size:15px;font-weight:700;border:2px solid #1F3A5F;background:#fff;color:#1F3A5F;border-radius:8px;cursor:pointer;">🔒 建商版（內部）</button>
+      <button id="exp-btn-o" onclick="selectExport('o')" style="flex:1;min-width:200px;padding:12px 16px;font-size:15px;font-weight:700;border:2px solid #0F6E75;background:#fff;color:#0F6E75;border-radius:8px;cursor:pointer;">🏠 住戶條件版</button>
     </div>
+    <div id="exp-tiers-wrap" style="display:none;margin-bottom:10px;font-size:12px;">住戶對照坪數：<input type="text" id="exp-tiers" value="20,30,40,50,60" style="width:160px;" onchange="if(EXP.mode==='o')buildExport()"/>（逗號分隔，改完自動更新）</div>
+    <div id="exp-banner" style="padding:10px 12px;border-radius:6px;margin-bottom:10px;font-weight:600;background:#F3F3F3;color:#666;">請選擇要匯出的版本</div>
     <div id="exp-actions" style="display:none;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-      <button onclick="shareExport()" style="padding:6px 14px;background:#06C755;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">分享（手機→LINE）</button>
-      <button onclick="downloadExport()" style="padding:6px 14px;background:#1D9E75;color:#fff;border:none;border-radius:6px;cursor:pointer;">下載全部 PNG</button>
+      <button id="exp-share" onclick="shareExport()" style="padding:6px 14px;background:#06C755;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">分享（手機→LINE）</button>
+      <button id="exp-dl" onclick="downloadExport()" style="padding:6px 14px;background:#1D9E75;color:#fff;border:none;border-radius:6px;cursor:pointer;">下載全部 PNG</button>
       <span id="exp-msg" style="font-size:12px;color:#888;align-self:center;"></span>
     </div>
     <div id="exp-preview" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
@@ -2669,9 +2669,30 @@ g5RenderParcels();g5RenderScen();calcG5();
 // ══════════════════════════════════════════════════════════════════
 // 匯出圖卡（LINE 用 1080×1350）：建商版／住戶條件版
 // ══════════════════════════════════════════════════════════════════
-const EXP={cards:[]};
+const EXP={cards:[],mode:null};
 const EXP_FF='"Microsoft JhengHei","PingFang TC","Noto Sans TC","Heiti TC",sans-serif';
-function openExport(){document.getElementById('exp-modal').style.display='block';}
+// 開啟時不預選，避免一打開就產生建商版
+function openExport(){
+  EXP.mode=null;EXP.cards=[];
+  document.getElementById('exp-preview').innerHTML='';
+  document.getElementById('exp-actions').style.display='none';
+  document.getElementById('exp-tiers-wrap').style.display='none';
+  expStyleBtns();
+  const bn=document.getElementById('exp-banner');bn.style.background='#F3F3F3';bn.style.color='#666';bn.textContent='請選擇要匯出的版本';
+  document.getElementById('exp-modal').style.display='block';
+}
+function expStyleBtns(){
+  [['b','#1F3A5F'],['o','#0F6E75']].forEach(([m,c])=>{const b=document.getElementById('exp-btn-'+m);const on=EXP.mode===m;b.style.background=on?c:'#fff';b.style.color=on?'#fff':c;});
+}
+// 二選一：點選即產生預覽，切換時清掉前一組
+function selectExport(m){
+  EXP.mode=m;expStyleBtns();
+  document.getElementById('exp-tiers-wrap').style.display=m==='o'?'block':'none';
+  const bn=document.getElementById('exp-banner');
+  if(m==='b'){bn.style.background='#FDECEA';bn.style.color='#B4441F';bn.textContent='⚠ 目前是建商版（內部資料），請勿傳給住戶';}
+  else{bn.style.background='#E6F4EA';bn.style.color='#1E6B3A';bn.textContent='目前是住戶條件版（可對外）';}
+  buildExport();
+}
 function closeExport(){document.getElementById('exp-modal').style.display='none';}
 const expW=v=>fmt(v/WAN,0)+' 萬';
 const expY=v=>{const w=v/WAN;return Math.abs(w)>=10000?fmt(w/10000,2)+' 億':fmt(w,0)+' 萬';};
@@ -2845,8 +2866,9 @@ function buildExport(){
   const d=expData(),pv=document.getElementById('exp-preview');
   if(!d){pv.innerHTML='<div class="al al-w">請先完成①②頁並設定「都更合建比例」大於0。</div>';return;}
   EXP.cards=[];
-  if(document.getElementById('exp-b').checked)EXP.cards.push(...expBuilder(d));
-  if(document.getElementById('exp-o').checked)EXP.cards.push(...expOwner(d));
+  if(EXP.mode==='b')EXP.cards.push(...expBuilder(d));
+  else if(EXP.mode==='o')EXP.cards.push(...expOwner(d));
+  else{pv.innerHTML='';document.getElementById('exp-actions').style.display='none';return;}
   pv.innerHTML='';
   EXP.cards.forEach(([n,c],i)=>{
     const w=document.createElement('div');w.style.cssText='border:1px solid #ddd;border-radius:8px;padding:6px;text-align:center;';
@@ -2857,7 +2879,10 @@ function buildExport(){
     w.append(img,t,b1,b2);pv.appendChild(w);
   });
   const a=document.getElementById('exp-actions');a.style.display=EXP.cards.length?'flex':'none';
-  document.getElementById('exp-msg').textContent=`共 ${EXP.cards.length} 張`;
+  const vn=EXP.mode==='b'?'建商版':'住戶版';
+  document.getElementById('exp-share').textContent=`分享${vn}（${EXP.cards.length} 張）`;
+  document.getElementById('exp-dl').textContent=`下載${vn}（${EXP.cards.length} 張）`;
+  document.getElementById('exp-msg').textContent='';
 }
 const expBlob=c=>new Promise(r=>c.toBlob(r,'image/png'));
 const expFile=async(n,c)=>new File([await expBlob(c)],`${n}.png`,{type:'image/png'});
