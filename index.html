@@ -360,10 +360,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
     </div>
   </div>
   <div class="fd">
-    <div class="cb-row" style="margin-bottom:4px;">
-      <input type="checkbox" id="s2-proptax-on" checked onchange="calcS2()"/>
-      <label for="s2-proptax-on">合建分屋營業稅（地主分回房屋部分）</label>
-    </div>
+    <label for="s2-swap-payer">互易營業稅（地主分回房屋部分）</label>
+    <select id="s2-swap-payer" onchange="calcS2()" style="margin-bottom:4px;">
+      <option value="builder" selected>建商負擔</option>
+      <option value="owner">地主負擔（建商向地主收取）</option>
+      <option value="off">不計</option>
+    </select>
     <div class="cb-row" style="margin-bottom:4px;">
       <input type="checkbox" id="s2-input-on" checked onchange="calcS2()"/>
       <label for="s2-input-on">扣抵進項稅額</label>
@@ -622,6 +624,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <div class="brow"><span class="bl">各地主分回銷坪加總（含加權）</span><span class="bv" id="s4-tot-sale">—</span></div>
   <div class="brow"><span class="bl">地主總分回銷坪（Step3）</span><span class="bv" id="s4-tot-sale-ref">—</span></div>
   <div class="brow"><span class="bl">各地主租金補貼加總</span><span class="bv" id="s4-tot-rent">—</span></div>
+  <div class="brow" id="s4-tot-vat-row" style="display:none;"><span class="bl">各地主負擔互易營業稅加總</span><span class="bv" id="s4-tot-vat">—</span></div>
 </div>
 
 <div class="nav-btns">
@@ -1124,17 +1127,20 @@ function calcS2(){
   const salesR=gf('s2-sr')/100,mgmtR=gf('s2-mr')/100;
   const vatR=gf('s2-vat')/100;
   const vatOn=document.getElementById('s2-vat-on')?.checked!==false;
-  const propTaxOn=document.getElementById('s2-proptax-on')?.checked!==false;
+  const swapPayer=document.getElementById('s2-swap-payer')?.value||'builder'; // builder / owner / off
+  const propTaxOn=swapPayer!=='off';
   const inputOn=document.getElementById('s2-input-on')?.checked!==false;
   const hv=parseFloat(document.getElementById('s2-house')?.value);
   const houseR=isFinite(hv)?Math.min(100,Math.max(0,hv))/100:0.45;
-  // 加值型營業稅：自售銷項（房屋部分，價內）＋合建分屋銷項（地主分回房屋部分）－進項扣抵
+  // 加值型營業稅：自售銷項（房屋部分，價內）＋互易銷項（地主分回房屋部分）－進項扣抵
+  // 互易稅由建商申報；選「地主負擔」時，建商另向地主收回該稅額（自建商成本扣回、改列地主負擔）
   function calcVAT(saleRev,swapRev,inputBase){
     const vatY=vatOn?saleRev*houseR/(1+vatR)*vatR:0;
     const propTax=propTaxOn?swapRev*houseR*vatR:0;
     const inVatRaw=inputOn?inputBase/(1+vatR)*vatR:0;
     const inVat=Math.min(inVatRaw,vatY+propTax);
-    return{vatY,propTax,inVat,inVatRaw,netVat:vatY+propTax-inVat};
+    const ownerPaid=swapPayer==='owner'?propTax:0;
+    return{vatY,propTax,inVat,inVatRaw,ownerPaid,netVat:vatY+propTax-inVat-ownerPaid};
   }
 
   const {aM2,aPing,totalM2,totalPing,salePing,grandM2,grandPing,totalCar,finalFloors,city,far,xfrR,K}=ST;
@@ -1290,10 +1296,11 @@ function calcS2(){
     const equity=totalCost-soilLoan-buildLoan; // 保證金不計入自有資金
 
     const oldBuildValue=oldPricePerPing*oldFloorPing;
-    const ownerNet=ownerRev-oldBuildValue;
+    const ownerVatPaid=ub_vat.ownerPaid;                 // 地主負擔之互易營業稅（元）
+    const ownerNet=ownerRev-oldBuildValue-ownerVatPaid;
     const ownerROE=oldBuildValue>0?ownerNet/oldBuildValue:null;
 
-    res.urban={...c,depCash:ub_depCash,brokerY,evictComp,rentSub,constCost,consultFee,trustFee,tdrCost,ub_tdr1,ub_tdr2,mgmtCost,builderRev,builderSaleP,builderCar,ownerRev,ownerSaleP,ownerCar,salesCost,vatY,propTax:ub_propTax,inVat:ub_vat.inVat,vatSaleBase:builderRev,vatSwapBase:ownerRev,vatInBase:ub_inBase,greenMaint:ub_greenMaint,greenDeposit:ub_greenDeposit,greenTotal:ub_greenTotal,smartDeposit:ub_smartDeposit,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,mergerR,oldBuildValue,ownerNet,ownerROE,
+    res.urban={...c,depCash:ub_depCash,brokerY,evictComp,rentSub,constCost,consultFee,trustFee,tdrCost,ub_tdr1,ub_tdr2,mgmtCost,builderRev,builderSaleP,builderCar,ownerRev,ownerSaleP,ownerCar,salesCost,vatY,propTax:ub_propTax,inVat:ub_vat.inVat,ownerVatPaid,vatSaleBase:builderRev,vatSwapBase:ownerRev,vatInBase:ub_inBase,greenMaint:ub_greenMaint,greenDeposit:ub_greenDeposit,greenTotal:ub_greenTotal,smartDeposit:ub_smartDeposit,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,mergerR,oldBuildValue,ownerNet,ownerROE,
       _ub_const:gf('ub-const'),_ub_sir:soilIR*100,_ub_bir:buildIR*100,_ub_sltv:soilLTV*100,_ub_bltv:buildLTV*100,_ub_sp:soilPeriod,_ub_bp:buildPeriod};
   }
 
@@ -1423,10 +1430,12 @@ function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
       r=>`自售${fmtW(r.vatSaleBase,0)} × 房屋${gf('s2-house')}% ÷ (1＋${gf('s2-vat')}%) × ${gf('s2-vat')}%`,
       r=>`建商分回${fmtW(r.vatSaleBase,0)} × 房屋${gf('s2-house')}% ÷ (1＋${gf('s2-vat')}%) × ${gf('s2-vat')}%`,
       r=>`總銷${fmtW(r.vatSaleBase,0)} × 房屋${gf('s2-house')}% ÷ (1＋${gf('s2-vat')}%) × ${gf('s2-vat')}%`],
-    ['　合建分屋營業稅（地主分回房屋部分）',r=>r.propTax,r=>r.propTax,r=>r.propTax,
+    ['　互易營業稅（地主分回房屋部分）',r=>r.propTax,r=>r.propTax,r=>r.propTax,
       r=>'無（自地自建）',
-      r=>`地主分回${fmtW(r.vatSwapBase,0)} × 房屋${gf('s2-house')}% × ${gf('s2-vat')}%`,
+      r=>`地主分回${fmtW(r.vatSwapBase,0)} × 房屋${gf('s2-house')}% × ${gf('s2-vat')}%（建商申報）`,
       r=>'無（委託興建）'],
+    ...(gv('s2-swap-payer')==='owner'?[['　地主負擔互易營業稅（向地主收回）',null,r=>-(r.ownerVatPaid||0),null,
+      null,r=>'依合約由地主負擔，建商向地主收取後申報',null]]:[]),
     ['　進項稅額扣抵',r=>-r.inVat,r=>-r.inVat,r=>-r.inVat,
       r=>`進項基數${fmtW(r.vatInBase,0)} ÷ (1＋${gf('s2-vat')}%) × ${gf('s2-vat')}%（以銷項為限）`,
       r=>`進項基數${fmtW(r.vatInBase,0)} ÷ (1＋${gf('s2-vat')}%) × ${gf('s2-vat')}%（以銷項為限）`,
@@ -1524,6 +1533,7 @@ function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
     <div class="brow"><span class="bl">地主分回車位</span><span class="bv-b">${u.ownerCar}位</span></div>
     <div class="brow"><span class="bl">地主分回市值</span><span class="bv-b">${fmtW(u.ownerRev,0)}</span></div>
     <div class="brow"><span class="bl">舊有建物總價</span><span class="bv">${fmtW(u.oldBuildValue,0)}</span></div>
+    ${u.ownerVatPaid>0?`<div class="brow"><span class="bl">地主負擔互易營業稅</span><span class="bv-r">−${fmtW(u.ownerVatPaid,0)}</span></div>`:''}
     <div class="brow"><span class="bl">地主淨增值</span><span class="bv-t">${fmtW(u.ownerNet,0)}</span></div>
     <div class="brow"><span class="bl">地主 ROE（增值÷舊建物）</span><span class="bv-g">${u.ownerROE!=null?fmt(u.ownerROE*100,1)+'%':'—'}</span></div>
     </div>`;
@@ -1672,7 +1682,8 @@ function renderS3(){
     const oActualP=r.ownerSaleP+negPing;
     const oActualCar=r.ownerCar+negCar;
     const oActualRev=(oActualP*s2.pPing+oActualCar*s2.pCar)*WAN+negCash;
-    const oActualNet=oActualRev-r.oldBuildValue;
+    const oVat=r.ownerVatPaid||0;                         // 地主負擔之互易營業稅
+    const oActualNet=oActualRev-r.oldBuildValue-oVat;
     const oActualROE=r.oldBuildValue>0?oActualNet/r.oldBuildValue:null;
 
     const hasNeg=negPing>0||negCar>0||negCash>0;
@@ -1714,6 +1725,8 @@ function renderS3(){
       ${hasNeg?`<div class="brow"><span class="bl">　基本分回市值</span><span class="bv">${fmtW(r.ownerRev,0)}</span></div>
       <div class="brow"><span class="bl">　讓坪市值</span><span class="bv-t">+${fmtW(negPing*pPingY+negCar*pCarY,1)}</span></div>
       <div class="brow"><span class="bl">　談判現金</span><span class="bv-t">+${fmtW(negCash,1)}</span></div>`:''}
+      ${oVat>0?`<div class="brow"><span class="bl">地主負擔互易營業稅</span><span class="bv-r">−${fmtW(oVat,0)}</span></div>
+      <div class="brow"><span class="bl" style="font-size:10.5px;color:#aaa;">　= 地主分回房屋部分 × ${gf('s2-vat')}%；約每坪分回銷坪 ${fmt(oVat/WAN/(r.ownerSaleP||1),2)}萬</span><span></span></div>`:''}
       <div class="brow"><span class="bl">地主淨增值</span><span class="bv-t">${fmtW(hasNeg?oActualNet:r.ownerNet,0)}</span></div>
       ${ownerOrigPing>0?`
       <div class="brow" style="border-top:1px dashed #ccc;margin-top:6px;padding-top:6px;">
@@ -1813,7 +1826,7 @@ document.getElementById('f-city').addEventListener('change',function(){updateUI1
  'cm-rate','cm-const','cm-oldprice','cm-oldfloor','cm-bir','cm-bltv','cm-bp','ub-tdr-f1','ub-tdr-f2'].forEach(id=>{
   const el=document.getElementById(id);if(el)el.addEventListener('change',calcS2);
 });
-['s2-vat-on','s2-proptax-on','s2-input-on'].forEach(id=>{
+['s2-vat-on','s2-swap-payer','s2-input-on'].forEach(id=>{
   const el=document.getElementById(id);if(el)el.addEventListener('change',calcS2);
 });
 ['s2-pself','s2-purb','s2-pcomm'].forEach(id=>{
@@ -1923,7 +1936,7 @@ const ALL_FIELD_IDS=[
   'f-abv-mult','f-floors-ovr','f-bfl-ovr','f-car-set','f-moto-set',
   // Step 2 shared
   's2-pprice','s2-cprice','s2-struct','s2-sr','s2-mr',
-  's2-vat','s2-smart','s2-house',
+  's2-vat','s2-smart','s2-house','s2-swap-payer',
   's2-pself','s2-purb','s2-pcomm',
   // Step 2 self
   'sl-land','sl-broker','sl-ltax','sl-dtax','sl-const',
@@ -1951,7 +1964,7 @@ function saveProject(){
     const el=document.getElementById(id);
     if(el)data.inputs[id]=el.value;
   });
-  ['s2-vat-on','s2-proptax-on','s2-input-on','s2-use-g5','f-unitmin'].forEach(id=>{
+  ['s2-vat-on','s2-input-on','s2-use-g5','f-unitmin'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)data.inputs[id]=el.checked?'1':'0';
   });
@@ -1980,6 +1993,11 @@ function loadProject(input){
         el.value=val;
         if(el.type==='checkbox')el.checked=val!=='0';
       });
+      // 舊版專案檔：「合建分屋營業稅」勾選框 → 互易營業稅負擔下拉選單
+      if(data.inputs['s2-swap-payer']===undefined){
+        const sp=document.getElementById('s2-swap-payer');
+        if(sp)sp.value=data.inputs['s2-proptax-on']==='0'?'off':'builder';
+      }
       // Second pass: fire SELECT change events after all values are restored
       // Zone must fire first so far/bcr presets are set, then far/bcr values from JSON win if non-empty
       ['f-zone','f-city','f-unit','s2-struct'].forEach(id=>{
@@ -2084,6 +2102,8 @@ function calcS4(){
   const pPing=s2?.pPing||0,pCar=s2?.pCar||0;
   const rentRate=gf('ub-rent')||0;     // 萬/坪/月
   const period=gf('ub-bp')||0;         // 年
+  const ownerVatTotW=(u?.ownerVatPaid||0)/WAN;           // 地主負擔互易稅（萬）
+  const ownerRevW=(u?.ownerRev||0)/WAN;
 
   const el=document.getElementById('s4-list');
   if(!el)return;
@@ -2095,7 +2115,7 @@ function calcS4(){
     return;
   }
 
-  let totLand=0,totSale=0,totRent=0;
+  let totLand=0,totSale=0,totRent=0,totVat=0;
 
   owners.forEach((o,i)=>{
     const ratio=basePing>0?o.landPing/basePing:0;
@@ -2103,9 +2123,10 @@ function calcS4(){
     const carRatio=ownerTotalCar*ratio;
     const totalVal=adjSaleP*pPing+carRatio*pCar;        // 萬元
     const rentSub=o.buildPing*rentRate*period*12;       // 萬元
+    const vatPay=ownerRevW>0?ownerVatTotW*totalVal/ownerRevW:0; // 依分回價值比例攤互易稅（萬）
     const oldBuildVal=o.oldPrice*o.buildPing;           // 萬元
-    const roe=oldBuildVal>0?(totalVal-oldBuildVal)/oldBuildVal:null;
-    totLand+=o.landPing;totSale+=adjSaleP;totRent+=rentSub;
+    const roe=oldBuildVal>0?(totalVal-vatPay-oldBuildVal)/oldBuildVal:null;
+    totLand+=o.landPing;totSale+=adjSaleP;totRent+=rentSub;totVat+=vatPay;
 
     const roeColor=roe==null?'#aaa':roe>=0?'#0F6E75':'#D85A30';
 
@@ -2137,6 +2158,8 @@ function calcS4(){
       </div>
       <div class="brow"><span class="bl">租金補貼</span><span class="bv-b">${fmt(rentSub,2)}萬</span></div>
       <div class="brow"><span class="bl" style="font-size:10.5px;color:#aaa;">　= 建物${o.buildPing}坪 × ${rentRate}萬/月 × ${period}年 × 12</span><span></span></div>
+      ${vatPay>0?`<div class="brow"><span class="bl">應付互易營業稅（地主負擔）</span><span class="bv-r">−${fmt(vatPay,2)}萬</span></div>
+      <div class="brow"><span class="bl" style="font-size:10.5px;color:#aaa;">　= 地主互易稅${fmt(ownerVatTotW,0)}萬 × 本戶分回價值占比${fmt(ownerRevW>0?totalVal/ownerRevW*100:0,3)}%</span><span></span></div>`:''}
       <div class="brow"><span class="bl">舊建物總價</span><span class="bv">${oldBuildVal>0?fmt(oldBuildVal,1)+'萬':'—（未填估價）'}</span></div>
       <div class="brow" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px;">
         <span class="bl" style="font-weight:600;">個人 ROE</span>
@@ -2154,6 +2177,9 @@ function calcS4(){
     s('s4-tot-sale',fmt(totSale,2)+'坪');
     s('s4-tot-sale-ref',fmt(ownerTotalSaleP,2)+'坪　差異 '+(totSale-ownerTotalSaleP>=0?'+':'')+fmt(totSale-ownerTotalSaleP,2)+'坪');
     s('s4-tot-rent',fmt(totRent,2)+'萬');
+    const vr=document.getElementById('s4-tot-vat-row');
+    if(vr)vr.style.display=totVat>0?'':'none';
+    s('s4-tot-vat',fmt(totVat,2)+'萬');
   }
 }
 
