@@ -139,6 +139,28 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <button onclick="document.getElementById('load-file').click()" style="padding:5px 14px;font-size:12px;background:#fff;border:1px solid #ddd;border-radius:6px;cursor:pointer;color:#555;font-family:inherit;">📂 載入專案</button>
   <button class="btn-c" onclick="runCalc()" style="padding:5px 14px;font-size:12px;">🔄 計算</button>
   <button onclick="saveProject()" style="padding:5px 14px;font-size:12px;background:#1D9E75;border:none;border-radius:6px;cursor:pointer;color:#fff;font-weight:500;font-family:inherit;">💾 儲存專案</button>
+  <button onclick="openExport()" style="padding:5px 14px;font-size:12px;background:#185FA5;border:none;border-radius:6px;cursor:pointer;color:#fff;font-weight:500;font-family:inherit;">📤 匯出圖卡</button>
+</div>
+<!-- 匯出圖卡視窗 -->
+<div id="exp-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;overflow:auto;">
+  <div style="max-width:980px;margin:30px auto;background:#fff;border-radius:10px;padding:16px 18px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-size:16px;font-weight:700;color:#185FA5;">📤 匯出圖卡（LINE 用，1080×1350）</div>
+      <button onclick="closeExport()" style="border:none;background:#eee;border-radius:6px;padding:4px 10px;cursor:pointer;">✕ 關閉</button>
+    </div>
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+      <label class="cb-row" style="margin:0;"><input type="checkbox" id="exp-b" checked/> 建商版（內部，3張）</label>
+      <label class="cb-row" style="margin:0;"><input type="checkbox" id="exp-o" checked/> 住戶條件版（對外，3張）</label>
+      <label style="font-size:12px;">住戶對照坪數：<input type="text" id="exp-tiers" value="20,30,40,50,60" style="width:140px;"/></label>
+      <button class="btn-c" onclick="buildExport()" style="padding:5px 14px;">產生預覽</button>
+    </div>
+    <div id="exp-actions" style="display:none;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+      <button onclick="shareExport()" style="padding:6px 14px;background:#06C755;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">分享（手機→LINE）</button>
+      <button onclick="downloadExport()" style="padding:6px 14px;background:#1D9E75;color:#fff;border:none;border-radius:6px;cursor:pointer;">下載全部 PNG</button>
+      <span id="exp-msg" style="font-size:12px;color:#888;align-self:center;"></span>
+    </div>
+    <div id="exp-preview" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ STEP 1 -->
@@ -2644,5 +2666,215 @@ G5_FIELDS.concat(G5_CHECKS).forEach(id=>{
 });
 g5RenderParcels();g5RenderScen();calcG5();
 
+// ══════════════════════════════════════════════════════════════════
+// 匯出圖卡（LINE 用 1080×1350）：建商版／住戶條件版
+// ══════════════════════════════════════════════════════════════════
+const EXP={cards:[]};
+const EXP_FF='"Microsoft JhengHei","PingFang TC","Noto Sans TC","Heiti TC",sans-serif';
+function openExport(){document.getElementById('exp-modal').style.display='block';}
+function closeExport(){document.getElementById('exp-modal').style.display='none';}
+const expW=v=>fmt(v/WAN,0)+' 萬';
+const expY=v=>{const w=v/WAN;return Math.abs(w)>=10000?fmt(w/10000,2)+' 億':fmt(w,0)+' 萬';};
+
+function expCard(title,sub,color,internal){
+  const W=1080,H=2400,c=document.createElement('canvas');c.width=W;c.height=H; // 草稿畫布，完成後依內容裁切（最少1350）
+  const x=c.getContext('2d');
+  x.fillStyle='#ffffff';x.fillRect(0,0,W,H);
+  x.fillStyle=color;x.fillRect(0,0,W,190);
+  x.fillStyle='#fff';x.font=`bold 56px ${EXP_FF}`;x.textBaseline='alphabetic';x.fillText(title,60,105);
+  x.font=`30px ${EXP_FF}`;x.fillStyle='rgba(255,255,255,.85)';x.fillText(sub,60,155);
+  if(internal){
+    x.fillStyle='#D85A30';x.fillRect(W-330,40,280,56);
+    x.fillStyle='#fff';x.font=`bold 28px ${EXP_FF}`;x.textAlign='center';x.fillText('內部資料・請勿外傳',W-190,78);x.textAlign='left';
+  }
+  return{c,x,y:240,color,internal};
+}
+function expSec(k,text){
+  k.y+=56;
+  const x=k.x;x.fillStyle=k.color;x.fillRect(60,k.y-36,10,46);
+  x.fillStyle='#222';x.font=`bold 40px ${EXP_FF}`;x.fillText(text,86,k.y);k.y+=30;
+}
+function expKpis(k,items){
+  const x=k.x,n=items.length,gap=24,w=(960-gap*(n-1))/n,h=200;
+  items.forEach((it,i)=>{
+    const bx=60+i*(w+gap),by=k.y;
+    x.fillStyle='#F3F6FA';x.fillRect(bx,by,w,h);
+    x.fillStyle=k.color;x.fillRect(bx,by,w,8);
+    x.textAlign='center';
+    x.fillStyle='#666';x.font=`30px ${EXP_FF}`;x.fillText(it[0],bx+w/2,by+60);
+    x.fillStyle=k.color;x.font=`bold 58px ${EXP_FF}`;x.fillText(it[1],bx+w/2,by+132);
+    if(it[2]){x.fillStyle='#888';x.font=`24px ${EXP_FF}`;x.fillText(it[2],bx+w/2,by+176);}
+    x.textAlign='left';
+  });
+  k.y+=h+10;
+}
+function expRows(k,rows,opt={}){
+  const x=k.x,rh=opt.rh||74;
+  rows.forEach((r,i)=>{
+    const by=k.y;
+    if(r[2]==='total'){x.fillStyle='#E8EEF5';x.fillRect(60,by,960,rh);}
+    else if(i%2===0){x.fillStyle='#FAFAFA';x.fillRect(60,by,960,rh);}
+    x.fillStyle='#444';x.font=`${r[2]==='total'?'bold ':''}33px ${EXP_FF}`;x.fillText(r[0],80,by+rh/2+12);
+    x.fillStyle=r[2]==='total'?k.color:'#111';x.font=`bold 35px ${EXP_FF}`;x.textAlign='right';x.fillText(r[1],1000,by+rh/2+12);x.textAlign='left';
+    k.y+=rh;
+  });
+  x.strokeStyle='#ddd';x.lineWidth=2;x.strokeRect(60,k.y-rh*rows.length,960,rh*rows.length);
+  k.y+=20;
+}
+function expTable(k,head,rows){
+  const x=k.x,rh=72,n=head.length,cw=960/n;
+  x.fillStyle=k.color;x.fillRect(60,k.y,960,rh);
+  x.fillStyle='#fff';x.font=`bold 31px ${EXP_FF}`;x.textAlign='center';
+  head.forEach((h,j)=>x.fillText(h,60+cw*j+cw/2,k.y+rh/2+11));
+  k.y+=rh;
+  rows.forEach((r,i)=>{
+    if(i%2===0){x.fillStyle='#F7F9FC';x.fillRect(60,k.y,960,rh);}
+    x.fillStyle='#111';
+    r.forEach((v,j)=>{x.font=`${j===0?'':'bold '}34px ${EXP_FF}`;x.fillText(v,60+cw*j+cw/2,k.y+rh/2+12);});
+    k.y+=rh;
+  });
+  x.textAlign='left';x.strokeStyle='#ddd';x.lineWidth=2;x.strokeRect(60,k.y-rh*(rows.length+1),960,rh*(rows.length+1));
+  k.y+=20;
+}
+function expNote(k,lines){
+  k.y+=22;const x=k.x;x.fillStyle='#666';x.font=`26px ${EXP_FF}`;
+  lines.forEach(l=>{x.fillText(l,70,k.y);k.y+=40;});k.y+=10;
+}
+function expFoot(k,name,page){
+  const H=Math.max(1350,Math.ceil(k.y+150));
+  const f=document.createElement('canvas');f.width=1080;f.height=H;
+  const x=f.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,1080,H);x.drawImage(k.c,0,0,1080,H,0,0,1080,H);
+  k.c=f;k.x=x;
+  x.fillStyle='#F3F3F3';x.fillRect(0,H-110,1080,110);
+  x.fillStyle='#777';x.font=`22px ${EXP_FF}`;
+  x.fillText('※ 本資料為初步估算，實際以主管機關核定及正式契約為準。',60,H-66);
+  x.fillText(`${name}　｜　${new Date().toLocaleDateString('zh-TW')}`,60,H-30);
+  x.textAlign='right';x.fillText(page,1020,H-30);x.textAlign='left';
+  if(k.internal){
+    x.save();x.translate(540,H/2+80);x.rotate(-Math.PI/7);x.fillStyle='rgba(216,90,48,.07)';
+    x.font=`bold 110px ${EXP_FF}`;x.textAlign='center';x.fillText('內部資料・請勿外傳',0,0);x.restore();
+  }
+}
+
+function expData(){
+  runCalc();
+  const s2=ST.s2,u=s2?.res?.urban;if(!u)return null;
+  const NV=negVals(),SB=subsidyVals(1),pPing=s2.pPing,pCar=s2.pCar,pMech=gf('s2-mprice');
+  const ownerP=u.ownerSaleP+NV.ping,ownerCar=u.ownerCar+NV.car;
+  const exist=ST.existPing||gf('ub-oldfloor');
+  const negVal=(NV.ping*pPing+NV.car*pCar+NV.cash)*WAN;
+  const bNet=u.netProfit-negVal;
+  const taxNet=u.vatY+u.propTax-u.inVat-(u.ownerVatPaid||0);
+  const zoneEl=document.getElementById('f-zone');
+  return{s2,u,NV,SB,pPing,pCar,pMech,ownerP,ownerCar,exist,ratio:exist>0?ownerP/exist:0,pingPerCar:ownerCar>0?ownerP/ownerCar:0,
+    negVal,bNet,bRoa:u.totalCost>0?bNet/u.totalCost:null,bRoe:u.equity>0?bNet/u.equity:null,taxNet,
+    name:gv('f-name')||'都更試算',zone:zoneEl?.selectedOptions?.[0]?.text||'',taxMode:gv('s2-tax-mode')==='company'?'公司版（對齊Excel）':'加值型',
+    payer:gv('s2-tax-mode')==='company'?'builder':gv('s2-swap-payer')};
+}
+function expBuilder(d){
+  const {u}=d,out=[],B='#1F3A5F',pct=v=>v!=null?fmt(v*100,1)+'%':'—';
+  const legalM2=ST.totalM2/(1+(ST.bonR||0)+(ST.xfrR||0));
+  // 1 案件總覽
+  let k=expCard('案件總覽',d.name,B,true);
+  expKpis(k,[['總容積',fmt(ST.totalPing,0)+' 坪',fmt(ST.totalM2,0)+' ㎡'],['總銷坪',fmt(ST.salePing,0)+' 坪','銷坪係數 '+fmt(ST.K,2)],['汽車位',ST.totalCar+' 位',(ST.mechCar?`平面${ST.planarCar}＋機械${ST.mechCar}`:'全部平面')]]);
+  expSec(k,'基地與容積');
+  expRows(k,[['基地面積',`${fmt(ST.aM2,2)} ㎡（${fmt(ST.aPing,2)} 坪）`],['使用分區／容積率',`${d.zone}／${gf('f-far')}%`],
+    ['法定容積',`${fmt(legalM2*M2P,0)} 坪`],['都更獎勵',`${fmt((ST.bonR||0)*100,2)}%（${fmt(legalM2*(ST.bonR||0)*M2P,0)} 坪）`],
+    ['容積移轉',`${fmt((ST.xfrR||0)*100,2)}%（${fmt(legalM2*(ST.xfrR||0)*M2P,0)} 坪）`]]);
+  expSec(k,'規模與售價');
+  expRows(k,[['樓層',`地上 ${ST.finalFloors}F／地下 ${ST.bFloors} 層`],['汽車位',`${ST.totalCar} 位`+(ST.mechCar?`（平面${ST.planarCar}＋機械${ST.mechCar}）`:'（全部平面）')],
+    ['售價',`${d.pPing} 萬/坪、車位 ${d.pCar} 萬`+(ST.mechCar?`、機械 ${d.pMech} 萬`:'')]]);
+  expFoot(k,d.name,'建商版 1/3');out.push(['建商版1_案件總覽',k.c]);
+  // 2 成本與報酬
+  k=expCard('成本與報酬',d.name,B,true);
+  expKpis(k,[['建商毛利',expY(u.netProfit),'談判前'],['ROA',pct(u.roa),'毛利÷總成本'],['ROE',pct(u.roe),'毛利÷自有資金']]);
+  const subs=u.rentSub+u.evictComp+(u.roofSub||0),ints=u.soilInt+u.buildInt,sell=u.salesCost+u.mgmtCost;
+  const other=u.totalCost-u.constCost-u.tdrCost-subs-d.taxNet-ints-sell;
+  expSec(k,'收入與成本（萬元）');
+  expRows(k,[['建商收入',expW(u.builderRev),'total'],['建造成本',expW(u.constCost)],['容積移轉費用',expW(u.tdrCost)],
+    ['補貼（租金＋搬遷＋頂加）',expW(subs)],['營業稅（淨額）',expW(d.taxNet)],['融資利息',expW(ints)],
+    ['銷售與管銷費用',expW(sell)],['其他（設計、基金、顧問、信託等）',expW(other)],['成本合計',expW(u.totalCost),'total']]);
+  expNote(k,[`營業稅算法：${d.taxMode}；互易稅負擔：${d.payer==='owner'?'地主':d.payer==='off'?'不計':'建商'}`]);
+  expFoot(k,d.name,'建商版 2/3');out.push(['建商版2_成本與報酬',k.c]);
+  // 3 分回與談判
+  k=expCard('分回與談判',d.name,B,true);
+  expKpis(k,[['合建比（建商）',fmt(u.mergerR*100,1)+'%','地主 '+fmt((1-u.mergerR)*100,1)+'%'],['地主換回比',fmt(d.ratio*100,1)+'%','新權狀÷原權狀'],['地主車位',d.ownerCar+' 位',`約每 ${fmt(d.pingPerCar,1)} 坪 1 位`]]);
+  expSec(k,'分配條件（地主分配比例）');
+  expRows(k,[['法定容積',gf('ub-p-legal')+'%'],['都更獎勵',gf('ub-p-bonus')+'%'],['容積移轉',gf('ub-p-tdr')+'%']]);
+  expSec(k,'分回結果');
+  const neg=d.NV.ping||d.NV.car||d.NV.cash;
+  const rows=[['建商分回',`${fmt(u.builderSaleP-d.NV.ping,1)} 坪、${u.builderCar-d.NV.car} 位`],['地主分回',`${fmt(d.ownerP,1)} 坪、${d.ownerCar} 位`]];
+  if(neg){rows.push(['談判讓步',`讓坪 ${fmt(d.NV.ping,1)}、讓車 ${d.NV.car}、現金 ${fmt(d.NV.cash,0)} 萬`]);
+    rows.push(['談判後建商毛利',expY(d.bNet),'total']);rows.push(['談判後 ROA／ROE',`${pct(d.bRoa)}／${pct(d.bRoe)}`,'total']);}
+  expRows(k,rows);
+  expFoot(k,d.name,'建商版 3/3');out.push(['建商版3_分回與談判',k.c]);
+  return out;
+}
+function expOwner(d){
+  const {u,SB}=d,out=[],G='#0F6E75';
+  const tiers=(document.getElementById('exp-tiers')?.value||'20,30,40,50,60').split(/[,，\s]+/).map(Number).filter(v=>v>0).slice(0,8);
+  // 1 分回條件
+  let k=expCard('更新後分回條件',d.name,G,false);
+  expKpis(k,[['權狀換回比',fmt(d.ratio*100,1)+'%','新權狀÷原權狀'],['地主合計分回',fmt(d.ownerP,0)+' 坪','不含車位'],['地主車位',d.ownerCar+' 位',`約每 ${fmt(d.pingPerCar,1)} 坪 1 位`]]);
+  expSec(k,'地主分配比例');
+  expRows(k,[['法定容積（土地本身可蓋的容積）',gf('ub-p-legal')+'%'],['都市更新獎勵',gf('ub-p-bonus')+'%'],['容積移轉（由實施者購買）',gf('ub-p-tdr')+'%']]);
+  expSec(k,'全體地主');
+  expRows(k,[['原產權登記面積',fmt(d.exist,2)+' 坪'],['更新後分回權狀面積',fmt(d.ownerP,2)+' 坪','total'],['權狀換回比',fmt(d.ratio*100,1)+'%','total']]);
+  expNote(k,['權狀面積含主建物、陽台及公共設施；各戶依權利價值、樓層位置調整。']);
+  expFoot(k,d.name,'住戶版 1/3');out.push(['住戶版1_分回條件',k.c]);
+  // 2 每戶換回對照
+  k=expCard('每戶換回對照',d.name,G,false);
+  expKpis(k,[['原權狀每 1 坪',`換回 ${fmt(d.ratio,3)} 坪`,'新權狀（不含車位）'],['車位分配',`每 ${fmt(d.pingPerCar,1)} 坪`,'新權狀分配 1 位']]);
+  expSec(k,'原權狀坪數 → 更新後');
+  expTable(k,['原權狀','換回新權狀','車位比例'],tiers.map(a=>[a+' 坪',fmt(a*d.ratio,1)+' 坪',d.pingPerCar>0?fmt(a*d.ratio/d.pingPerCar,2)+' 位':'—']));
+  expNote(k,['以全體平均換回比估算，實際依各戶權利價值、樓層及位置調整；','車位依比例試算，實際依選配及找補方式辦理。']);
+  expFoot(k,d.name,'住戶版 2/3');out.push(['住戶版2_每戶換回對照',k.c]);
+  // 3 補貼
+  k=expCard('補貼項目',d.name,G,false);
+  const rp=[];if(SB.shopA>0)rp.push(`店面 ${fmt(SB.shopP,0)}`);if(SB.offA>0)rp.push(`辦公 ${fmt(SB.offP,0)}`);rp.push(`住家 ${fmt(SB.homeP,0)}`);
+  expSec(k,'租金補貼（實施者支付）');
+  expRows(k,[['單價（元／坪／月，依原權狀）',rp.join('、')],['補貼期間',`約 ${fmt(SB.months,0)} 個月（${fmt(SB.months/12,1)} 年）`]]);
+  expTable(k,['原權狀','每月租金補貼','期間合計'],tiers.slice(0,5).map(a=>[a+' 坪',fmt(a*SB.homeP,0)+' 元',fmt(a*SB.homeP*SB.months/WAN,1)+' 萬']));
+  expSec(k,'其他補貼');
+  const ev=[];if(SB.evShopN>0)ev.push(`店面 ${SB.evShop} 萬`);if(SB.evOffN>0)ev.push(`辦公 ${SB.evOff} 萬`);ev.push(`住家 ${SB.evHome} 萬`);
+  expRows(k,[['搬遷補貼（每戶，一次性）',ev.join('、')],['頂加（違章面積）補貼',`每坪 ${fmt(SB.roofP,1)} 萬`]]); // 互易稅此階段不對住戶揭露
+  expFoot(k,d.name,'住戶版 3/3');out.push(['住戶版3_補貼項目',k.c]);
+  return out;
+}
+function buildExport(){
+  const d=expData(),pv=document.getElementById('exp-preview');
+  if(!d){pv.innerHTML='<div class="al al-w">請先完成①②頁並設定「都更合建比例」大於0。</div>';return;}
+  EXP.cards=[];
+  if(document.getElementById('exp-b').checked)EXP.cards.push(...expBuilder(d));
+  if(document.getElementById('exp-o').checked)EXP.cards.push(...expOwner(d));
+  pv.innerHTML='';
+  EXP.cards.forEach(([n,c],i)=>{
+    const w=document.createElement('div');w.style.cssText='border:1px solid #ddd;border-radius:8px;padding:6px;text-align:center;';
+    const img=document.createElement('img');img.src=c.toDataURL('image/png');img.style.cssText='width:100%;border-radius:4px;';
+    const b1=document.createElement('button');b1.textContent='複製';b1.style.cssText='margin:6px 4px 0;padding:3px 10px;';b1.onclick=()=>copyExport(i);
+    const b2=document.createElement('button');b2.textContent='下載';b2.style.cssText='margin:6px 4px 0;padding:3px 10px;';b2.onclick=()=>dlOne(i);
+    const t=document.createElement('div');t.textContent=n;t.style.cssText='font-size:11px;color:#666;margin-top:4px;';
+    w.append(img,t,b1,b2);pv.appendChild(w);
+  });
+  const a=document.getElementById('exp-actions');a.style.display=EXP.cards.length?'flex':'none';
+  document.getElementById('exp-msg').textContent=`共 ${EXP.cards.length} 張`;
+}
+const expBlob=c=>new Promise(r=>c.toBlob(r,'image/png'));
+const expFile=async(n,c)=>new File([await expBlob(c)],`${n}.png`,{type:'image/png'});
+function dlOne(i){const [n,c]=EXP.cards[i];const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download=n+'.png';a.click();}
+async function downloadExport(){for(let i=0;i<EXP.cards.length;i++){dlOne(i);await new Promise(r=>setTimeout(r,350));}}
+async function copyExport(i){
+  const m=document.getElementById('exp-msg');
+  try{const b=await expBlob(EXP.cards[i][1]);await navigator.clipboard.write([new ClipboardItem({'image/png':b})]);m.textContent='✓ 已複製，可到 LINE 貼上';}
+  catch(e){m.textContent='此瀏覽器無法複製圖片，請改用下載';}
+}
+async function shareExport(){
+  const m=document.getElementById('exp-msg');
+  try{
+    const files=await Promise.all(EXP.cards.map(([n,c])=>expFile(n,c)));
+    if(navigator.canShare&&navigator.canShare({files})){await navigator.share({files,title:gv('f-name')||'都更試算'});m.textContent='✓ 已開啟分享';}
+    else{m.textContent='此裝置不支援直接分享（電腦請用「下載全部」或「複製」）';}
+  }catch(e){m.textContent='分享已取消或失敗';}
+}
 </script>
 </body></html>
