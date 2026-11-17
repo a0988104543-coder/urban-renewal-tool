@@ -159,6 +159,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
       <button id="exp-dl" onclick="downloadExport()" style="padding:6px 14px;background:#1D9E75;color:#fff;border:none;border-radius:6px;cursor:pointer;">下載全部 PNG</button>
       <span id="exp-msg" style="font-size:12px;color:#888;align-self:center;"></span>
     </div>
+    <div id="exp-hint" style="display:none;font-size:12px;color:#555;background:#F6F8FA;border-radius:6px;padding:8px 10px;margin-bottom:10px;line-height:1.6;"></div>
     <div id="exp-preview" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
   </div>
 </div>
@@ -2677,6 +2678,7 @@ function openExport(){
   EXP.mode=null;EXP.cards=[];
   document.getElementById('exp-preview').innerHTML='';
   document.getElementById('exp-actions').style.display='none';
+  document.getElementById('exp-hint').style.display='none';
   document.getElementById('exp-tiers-wrap').style.display='none';
   expStyleBtns();
   const bn=document.getElementById('exp-banner');bn.style.background='#F3F3F3';bn.style.color='#666';bn.textContent='請選擇要匯出的版本';
@@ -2869,30 +2871,69 @@ function buildExport(){
   EXP.cards=[];
   if(EXP.mode==='b')EXP.cards.push(...expBuilder(d));
   else if(EXP.mode==='o')EXP.cards.push(...expOwner(d));
-  else{pv.innerHTML='';document.getElementById('exp-actions').style.display='none';return;}
+  else{pv.innerHTML='';document.getElementById('exp-actions').style.display='none';document.getElementById('exp-hint').style.display='none';return;}
   pv.innerHTML='';
   EXP.cards.forEach(([n,c],i)=>{
     const w=document.createElement('div');w.style.cssText='border:1px solid #ddd;border-radius:8px;padding:6px;text-align:center;';
     const img=document.createElement('img');img.src=c.toDataURL('image/png');img.style.cssText='width:100%;border-radius:4px;';
-    const b1=document.createElement('button');b1.textContent='複製';b1.style.cssText='margin:6px 4px 0;padding:3px 10px;';b1.onclick=()=>copyExport(i);
+    const b1=document.createElement('button');b1.textContent='複製';b1.style.cssText='margin:6px 4px 0;padding:3px 10px;';b1.onclick=()=>copyExport(i,b1);
     const b2=document.createElement('button');b2.textContent='下載';b2.style.cssText='margin:6px 4px 0;padding:3px 10px;';b2.onclick=()=>dlOne(i);
     const t=document.createElement('div');t.textContent=n;t.style.cssText='font-size:11px;color:#666;margin-top:4px;';
     w.append(img,t,b1,b2);pv.appendChild(w);
   });
   const a=document.getElementById('exp-actions');a.style.display=EXP.cards.length?'flex':'none';
   const vn=EXP.mode==='b'?'建商版':'住戶版';
-  document.getElementById('exp-share').textContent=`分享${vn}（${EXP.cards.length} 張）`;
-  document.getElementById('exp-dl').textContent=`下載${vn}（${EXP.cards.length} 張）`;
+  const sh=document.getElementById('exp-share'),dl=document.getElementById('exp-dl'),hint=document.getElementById('exp-hint');
+  sh.textContent=`分享${vn}（${EXP.cards.length} 張）`;
+  if(EXP_MOBILE){
+    // 手機：維持「分享 → LINE」為主
+    sh.style.display='';
+    dl.textContent=`下載${vn}（${EXP.cards.length} 張）`;
+    hint.style.display='none';
+  }else{
+    // 電腦：系統分享選單沒有 LINE，改成存到資料夾後拖進 LINE
+    sh.style.display='none';
+    dl.textContent=`存到資料夾（${vn} ${EXP.cards.length} 張）`;
+    hint.style.display='block';
+    hint.innerHTML='💻 電腦傳 LINE：按「存到資料夾」選一個資料夾 → 打開該資料夾，把圖片<b>一起拖進 LINE 聊天室</b>。<br>只傳一張：按圖下方「複製」，再到 LINE 對話框按 <b>Ctrl+V</b>。';
+  }
   document.getElementById('exp-msg').textContent='';
 }
+// 手機／平板判斷（iPadOS 會偽裝成 Mac，用觸控點判斷）
+const EXP_MOBILE=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
 const expBlob=c=>new Promise(r=>c.toBlob(r,'image/png'));
 const expFile=async(n,c)=>new File([await expBlob(c)],`${n}.png`,{type:'image/png'});
 function dlOne(i){const [n,c]=EXP.cards[i];const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download=n+'.png';a.click();}
-async function downloadExport(){for(let i=0;i<EXP.cards.length;i++){dlOne(i);await new Promise(r=>setTimeout(r,350));}}
-async function copyExport(i){
+async function downloadExport(){
+  const m=document.getElementById('exp-msg'),n=EXP.cards.length;
+  // 電腦且支援選資料夾（Chrome／Edge）：一次寫入全部，不會被「多檔下載」擋下
+  if(!EXP_MOBILE&&window.showDirectoryPicker){
+    let dir;
+    try{dir=await window.showDirectoryPicker({id:'urt-export',mode:'readwrite',startIn:'downloads'});}
+    catch(e){if(e&&e.name==='AbortError'){m.textContent='已取消';return;}dir=null;}
+    if(dir){
+      try{
+        for(const [name,c] of EXP.cards){
+          const fh=await dir.getFileHandle(name+'.png',{create:true});
+          const w=await fh.createWritable();await w.write(await expBlob(c));await w.close();
+        }
+        m.textContent=`✓ 已存 ${n} 張到「${dir.name}」資料夾，打開後一起拖進 LINE 即可`;
+        return;
+      }catch(e){m.textContent='寫入資料夾失敗，改用逐張下載…';}
+    }
+  }
+  // 備用：逐張下載
+  for(let i=0;i<n;i++){dlOne(i);await new Promise(r=>setTimeout(r,350));}
+  if(!EXP_MOBILE)m.textContent=`已送出 ${n} 張下載。若只存到 1 張，請在網址列右側允許「下載多個檔案」後再按一次`;
+}
+async function copyExport(i,btn){
   const m=document.getElementById('exp-msg');
-  try{const b=await expBlob(EXP.cards[i][1]);await navigator.clipboard.write([new ClipboardItem({'image/png':b})]);m.textContent='✓ 已複製，可到 LINE 貼上';}
-  catch(e){m.textContent='此瀏覽器無法複製圖片，請改用下載';}
+  const flash=(t,ok)=>{if(!btn)return;btn.textContent=t;btn.style.background=ok?'#E6F6EC':'#FDECEC';btn.style.color=ok?'#137333':'#B3261E';clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.textContent='複製';btn.style.background='';btn.style.color='';},2500);};
+  try{
+    // 用 Promise 包 Blob，Safari 才允許在點擊後非同步寫入剪貼簿
+    await navigator.clipboard.write([new ClipboardItem({'image/png':expBlob(EXP.cards[i][1])})]);
+    flash('✓ 已複製',true);m.textContent=`✓ 已複製「${EXP.cards[i][0]}」，到 LINE 按 Ctrl+V 貼上`;
+  }catch(e){flash('複製失敗',false);m.textContent='此瀏覽器無法複製圖片，請改用「下載」';}
 }
 async function shareExport(){
   const m=document.getElementById('exp-msg');
