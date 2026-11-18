@@ -9,17 +9,32 @@
  *
  * 指令碼屬性（專案設定 → 指令碼屬性）：
  *   GEMINI_API_KEY  必填
- *   GEMINI_MODEL    選填，預設 gemini-2.5-flash
+ *   GEMINI_MODEL    選填，可用逗號列多個模型，依序嘗試（前一個忙線或不可用就換下一個）
+ *                   預設 gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-flash-lite-latest,gemini-3.8-flash
  *
  * 部署：部署作業 → 新增部署作業 → 網頁應用程式
  *       執行身分：我　／　誰可以存取：所有人
  * 之後更新：管理部署作業 → 編輯 → 建立新版本（不要再新增部署作業，否則網址會變）
  */
 
-var DEFAULT_MODEL = 'gemini-2.5-flash';
+var DEFAULT_MODEL = 'gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-flash-lite-latest,gemini-3.8-flash';
 
-function doGet() {
+function doGet(e) {
+  if (e && e.parameter && e.parameter.action === 'models') return json_(listModels_());
   return json_({ ok: true, service: 'urban-renewal-ocr' });
+}
+
+/** 列出這把金鑰可用、支援 generateContent 的模型名稱（不含金鑰）。 */
+function listModels_() {
+  var key = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', {
+    headers: { 'x-goog-api-key': key }, muteHttpExceptions: true
+  });
+  if (res.getResponseCode() !== 200) return { ok: false, error: res.getResponseCode() + ' ' + res.getContentText().slice(0, 200) };
+  var ms = (JSON.parse(res.getContentText()).models || []).filter(function (m) {
+    return (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0;
+  }).map(function (m) { return m.name.replace('models/', ''); });
+  return { ok: true, models: ms };
 }
 
 function doPost(e) {
@@ -71,7 +86,8 @@ function recognize_(b64, mime) {
   var props = PropertiesService.getScriptProperties();
   var key = props.getProperty('GEMINI_API_KEY');
   if (!key) throw new Error('Apps Script 沒有設定 GEMINI_API_KEY');
-  var model = props.getProperty('GEMINI_MODEL') || DEFAULT_MODEL;
+  var models = (props.getProperty('GEMINI_MODEL') || DEFAULT_MODEL).split(',')
+    .map(function (m) { return m.trim(); }).filter(String);
 
   var body = {
     contents: [{ role: 'user', parts: [
@@ -84,7 +100,6 @@ function recognize_(b64, mime) {
       responseSchema: SCHEMA
     }
   };
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent';
   var opt = {
     method: 'post',
     contentType: 'application/json',
@@ -93,14 +108,20 @@ function recognize_(b64, mime) {
     muteHttpExceptions: true
   };
 
-  var res = UrlFetchApp.fetch(url, opt);
-  if (res.getResponseCode() === 429 || res.getResponseCode() >= 500) { // 速率限制或暫時錯誤：等一下重試一次
-    Utilities.sleep(2500);
-    res = UrlFetchApp.fetch(url, opt);
+  // 依序嘗試每個模型；忙線（429/503/500）先等一下重試一次，還不行就換下一個模型；其他錯誤直接換下一個
+  var text = null, model = null, errs = [];
+  for (var i = 0; i < models.length && text === null; i++) {
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + models[i] + ':generateContent';
+    for (var attempt = 0; attempt < 2; attempt++) {
+      var res = UrlFetchApp.fetch(url, opt);
+      var code = res.getResponseCode();
+      if (code === 200) { text = res.getContentText(); model = models[i]; break; }
+      errs.push(models[i] + ' ' + code);
+      if (code === 429 || code >= 500) { if (attempt === 0) { Utilities.sleep(2000); continue; } }
+      break;
+    }
   }
-  var code = res.getResponseCode();
-  var text = res.getContentText();
-  if (code !== 200) throw new Error('Gemini 錯誤 ' + code + '：' + text.slice(0, 300));
+  if (text === null) throw new Error('Gemini 暫時無法使用（' + errs.join('、') + '），請稍後再試');
 
   var data = JSON.parse(text);
   var parts = (((data.candidates || [])[0] || {}).content || {}).parts || [];
@@ -128,7 +149,7 @@ function json_(o) {
 function testKey() {
   var props = PropertiesService.getScriptProperties();
   var key = props.getProperty('GEMINI_API_KEY');
-  var model = props.getProperty('GEMINI_MODEL') || DEFAULT_MODEL;
+  var model = (props.getProperty('GEMINI_MODEL') || DEFAULT_MODEL).split(',')[0].trim();
   var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model, {
     headers: { 'x-goog-api-key': key }, muteHttpExceptions: true
   });

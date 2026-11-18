@@ -9,7 +9,11 @@
 ## 2026-11-18 23:30｜claude.ai｜還原成拖照片的版本（API）
 
 - 「複製提問」那一版比手打還麻煩，不符合這個功能的目的，所以 `index.html` 還原成 `f61ff2e` 的拖照片版本。
-- Gemini 金鑰改用**免費金鑰**（AI Studio 新建、不綁帳單的專案），只給速算工具用。設定在「都更速算-截圖辨識」Apps Script 的指令碼屬性。
+- Gemini 金鑰改用**免費金鑰**，建在 AI Studio 的「My First Project」（沒綁帳單），只給速算工具用。設定在「都更速算-截圖辨識」Apps Script 的指令碼屬性。
+- Apps Script 更新到第 2 版（沿用原部署，網址不變）：
+  - `GEMINI_MODEL` 可以用逗號列多個模型依序嘗試，目前設定是 `gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-flash-lite-latest,gemini-3.8-flash`。免費版常遇到 503（模型忙線），所以設了備援。
+  - 新增 `?action=models`，可以列出這把金鑰能用的模型。
+- 實測：真的打 Gemini，回傳面積 254、公告現值 410,000、公告地價 108,000，正確，約 8 秒（用的是 gemini-3.5-flash-lite）。
 
 ---
 
