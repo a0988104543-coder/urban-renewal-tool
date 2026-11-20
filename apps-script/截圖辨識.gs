@@ -3,7 +3,7 @@
  *
  * 用途：前端傳一張截圖（base64），由 Gemini 判斷是哪一種截圖並讀出數字，回傳 JSON。
  * 只讀兩種截圖：
- *   parcel ＝ 地號查詢結果（土地分頁）：面積、公告現值、公告地價
+ *   parcel ＝ 地號查詢結果（土地分頁）：地段地號、面積、公告現值、公告地價
  *   stats  ＝ 自劃區統計表：土地登記總面積、建物登記總面積
  * 其他圖一律回傳 type = unknown，前端會略過。
  *
@@ -54,6 +54,7 @@ var PROMPT = [
   '你會看到一張台灣地政或都市更新網站的截圖。請先判斷類型，再只讀出指定的數字。',
   '',
   '類型 parcel：單一地號的土地資訊（例如「整合資訊查詢結果」的土地分頁），有「面積」「公告現值」「公告地價」。',
+  '  lot ＝ 地段地號，照圖上抄成一行文字，例如「福和段一小段0546-0000」（看不清楚填 null）',
   '  area_m2 ＝ 面積（平方公尺）',
   '  ann ＝ 公告現值（元／平方公尺）',
   '  lp ＝ 公告地價（元／平方公尺）',
@@ -73,6 +74,7 @@ var SCHEMA = {
   type: 'OBJECT',
   properties: {
     type: { type: 'STRING', enum: ['parcel', 'stats', 'unknown'] },
+    lot: { type: 'STRING', nullable: true },
     area_m2: { type: 'NUMBER', nullable: true },
     ann: { type: 'NUMBER', nullable: true },
     lp: { type: 'NUMBER', nullable: true },
@@ -138,6 +140,9 @@ function recognize_(b64, mime) {
     var v = r[k];
     clean[k] = (typeof v === 'number' && isFinite(v) && v > 0) ? v : null;
   });
+  // 地號：只留文字、去掉空白；不是 parcel 一律 null
+  var lot = (clean.type === 'parcel' && typeof r.lot === 'string') ? r.lot.replace(/\s+/g, '') : '';
+  clean.lot = lot ? lot.slice(0, 40) : null;
   return clean;
 }
 

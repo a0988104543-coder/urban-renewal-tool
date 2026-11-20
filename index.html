@@ -3081,12 +3081,31 @@ function ocrPropose(items,unit,cur){
     const vs=S.map(x=>x.res[k]).filter(v=>v!=null);
     if(!vs.length)return;
     if(vs.some(v=>v!==vs[0])){warns.push(`多張自劃區統計的${lbl.split('（')[0]}不一致，不寫入`);return;}
-    rows.push({id,label:lbl,cur:cur[id]??'',val:toU(vs[0]),unit:uL,def});
+    rows.push({id,label:lbl,cur:cur[id]??'',val:toU(vs[0]),unit:uL,def,src:'stats'});
   });
+  // 沒有自劃區統計表時：基地面積＝各地號面積加總（預設勾選）
+  if(P.length&&!rows.some(r=>r.id==='f-area')){
+    const noA=P.filter(x=>x.res.area_m2==null);
+    if(noA.length)warns.push(`${noA.map(no).join('、')} 讀不到面積，基地面積不寫入`);
+    else{
+      const sa=P.reduce((s,x)=>s+x.res.area_m2,0);
+      rows.push({id:'f-area',label:`基地面積（${P.length} 筆地號面積加總）`,cur:cur['f-area']??'',val:toU(sa),unit:uL,def:true,src:'parcel'});
+    }
+  }
+  // 地號明細表：每張地號截圖一列；同地號更新、新地號新增
+  if(P.length){
+    const key=v=>String(v||'').replace(/\s+/g,'');
+    const noLot=P.filter(x=>!x.res.lot);
+    if(noLot.length)warns.push(`${noLot.map(no).join('、')} 讀不到地號，地號明細表裡該列的地號會留空`);
+    const have=new Set((cur.__lots||[]).map(key).filter(Boolean));
+    const parcels=P.map(x=>({no:x.res.lot?key(x.res.lot):'',area:x.res.area_m2,ann:x.res.ann}));
+    const upd=parcels.filter(q=>q.no&&have.has(q.no)).length;
+    rows.push({id:'__parcels',label:`地號明細表（新增 ${parcels.length-upd} 筆、更新 ${upd} 筆）`,cur:(cur.__lots||[]).length?`已有 ${cur.__lots.length} 筆`:'',val:String(parcels.length),unit:'筆',def:true,parcels});
+  }
   return{rows,warns};
 }
 
-function ocrCur(){const c={};['f-ann','f-lp','f-area','f-exist'].forEach(id=>{c[id]=document.getElementById(id)?.value||'';});return c;}
+function ocrCur(){const c={};['f-ann','f-lp','f-area','f-exist'].forEach(id=>{c[id]=document.getElementById(id)?.value||'';});c.__lots=g5Parcels.map(p=>p.no);return c;}
 
 function ocrRender(){
   const url=ocrUrl();
@@ -3100,7 +3119,7 @@ function ocrRender(){
     else if(it.status==='err')info=`<span style="color:#D85A30;">⚠ ${g5esc(it.err)}</span>`;
     else{
       const r=it.res;
-      if(r.type==='parcel')info=`面積 ${fmtN(r.area_m2)} m²｜現值 ${fmtN(r.ann)}｜地價 ${fmtN(r.lp)}`;
+      if(r.type==='parcel')info=`${r.lot?'<b>'+g5esc(r.lot)+'</b>｜':''}面積 ${fmtN(r.area_m2)} m²｜現值 ${fmtN(r.ann)}｜地價 ${fmtN(r.lp)}`;
       else if(r.type==='stats')info=`土地總面積 ${fmtN(r.land_total_m2)} m²｜建物總面積 ${fmtN(r.bldg_total_m2)} m²`;
     }
     const can=it.status==='ok'&&it.res.type!=='unknown';
@@ -3120,7 +3139,7 @@ function ocrRender(){
         const ck=OCR.checked[r.id]??r.def;
         return `<tr><td><input type="checkbox" ${ck?'checked':''} onchange="OCR.checked['${r.id}']=this.checked;ocrRender();"/></td><td>${r.label}</td><td>${r.cur===''?'（空）':g5esc(r.cur)}</td><td><b>${Number(r.val).toLocaleString('zh-TW')}</b> ${r.unit}</td></tr>`;
       }).join('')+'</tbody></table>';
-    if(p.rows.some(r=>r.id==='f-area'))h+='<div style="font-size:11px;color:#999;margin-top:4px;">基地面積預設不勾：查詢範圍可能含道路用地，與試算基地不一定相同。</div>';
+    if(p.rows.some(r=>r.id==='f-area'&&r.src==='stats'))h+='<div style="font-size:11px;color:#999;margin-top:4px;">基地面積預設不勾：查詢範圍可能含道路用地，與試算基地不一定相同。</div>';
   }else if(done)h+='<div style="font-size:12px;color:#999;margin-top:8px;">沒有可以寫入的欄位</div>';
   document.getElementById('ocr-rows').innerHTML=h;
   const n=p.rows.filter(r=>OCR.checked[r.id]??r.def).length;
@@ -3132,8 +3151,21 @@ function ocrApply(){
   const p=ocrPropose(OCR.items,gv('f-unit'),ocrCur());
   const sel=p.rows.filter(r=>OCR.checked[r.id]??r.def);
   if(!sel.length)return;
-  sel.forEach(r=>{const el=document.getElementById(r.id);if(el){el.value=r.val;el.classList.remove('expr-err');}});
+  sel.forEach(r=>{
+    if(r.id==='__parcels')return;
+    const el=document.getElementById(r.id);if(el){el.value=r.val;el.classList.remove('expr-err');}
+  });
   runCalc();
+  const pr=sel.find(r=>r.id==='__parcels');
+  if(pr){
+    const far=gf('f-far')||'';
+    pr.parcels.forEach(q=>{
+      const ex=q.no?g5Parcels.find(x=>String(x.no||'').replace(/\s+/g,'')===q.no):null;
+      if(ex){ex.area=q.area;if(q.ann!=null)ex.ann=q.ann;}
+      else g5Parcels.push({no:q.no,area:q.area,far,ann:q.ann??'',inSite:true,dis:false});
+    });
+    g5RenderParcels();calcG5();
+  }
   closeOcr();
   const st=document.getElementById('save-status');
   if(st){st.textContent=`✓ 截圖已填入 ${sel.length} 個欄位`;setTimeout(()=>{st.textContent='';},5000);}
