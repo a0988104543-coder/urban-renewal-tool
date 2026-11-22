@@ -99,7 +99,8 @@ function recognize_(b64, mime) {
     generationConfig: {
       temperature: 0,
       responseMimeType: 'application/json',
-      responseSchema: SCHEMA
+      responseSchema: SCHEMA,
+      maxOutputTokens: 1024   // 防止模型卡住一直重複輸出同一個字
     }
   };
   var opt = {
@@ -111,27 +112,24 @@ function recognize_(b64, mime) {
   };
 
   // 依序嘗試每個模型；忙線（429/503/500）先等一下重試一次，還不行就換下一個模型；其他錯誤直接換下一個
-  var text = null, model = null, errs = [];
-  for (var i = 0; i < models.length && text === null; i++) {
+  // 回傳的 JSON 壞掉（例如模型卡住一直輸出 0）也當成這個模型失敗，換下一個
+  var r = null, model = null, errs = [];
+  for (var i = 0; i < models.length && r === null; i++) {
     var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + models[i] + ':generateContent';
     for (var attempt = 0; attempt < 2; attempt++) {
       var res = UrlFetchApp.fetch(url, opt);
       var code = res.getResponseCode();
-      if (code === 200) { text = res.getContentText(); model = models[i]; break; }
+      if (code === 200) {
+        r = parseOut_(res.getContentText());
+        if (r) model = models[i]; else errs.push(models[i] + ' 輸出異常');
+        break;
+      }
       errs.push(models[i] + ' ' + code);
       if (code === 429 || code >= 500) { if (attempt === 0) { Utilities.sleep(2000); continue; } }
       break;
     }
   }
-  if (text === null) throw new Error('Gemini 暫時無法使用（' + errs.join('、') + '），請稍後再試');
-
-  var data = JSON.parse(text);
-  var parts = (((data.candidates || [])[0] || {}).content || {}).parts || [];
-  var out = parts.filter(function (x) { return x.text && !x.thought; })
-                 .map(function (x) { return x.text; }).join('');
-  var s = out.indexOf('{'), t = out.lastIndexOf('}');
-  if (s < 0 || t < s) throw new Error('Gemini 沒有回傳 JSON：' + out.slice(0, 200));
-  var r = JSON.parse(out.slice(s, t + 1));
+  if (r === null) throw new Error('辨識失敗（' + errs.join('、') + '），請按重試');
 
   // 只回傳約定的欄位，數字以外一律當 null
   var keys = ['area_m2', 'ann', 'lp', 'land_total_m2', 'bldg_total_m2'];
@@ -140,10 +138,24 @@ function recognize_(b64, mime) {
     var v = r[k];
     clean[k] = (typeof v === 'number' && isFinite(v) && v > 0) ? v : null;
   });
-  // 地號：只留文字、去掉空白；不是 parcel 一律 null
+  // 地號：只留文字、去掉空白；不是 parcel 一律 null；格式不像「○○段…0000-0000」也當讀不到
   var lot = (clean.type === 'parcel' && typeof r.lot === 'string') ? r.lot.replace(/\s+/g, '') : '';
-  clean.lot = lot ? lot.slice(0, 40) : null;
+  clean.lot = (lot.length <= 30 && /段/.test(lot) && /\d{1,4}-\d{1,4}$/.test(lot)) ? lot : null;
   return clean;
+}
+
+/** 從 Gemini 回應取出 JSON 物件；壞掉就回傳 null。 */
+function parseOut_(text) {
+  try {
+    var data = JSON.parse(text);
+    var parts = (((data.candidates || [])[0] || {}).content || {}).parts || [];
+    var out = parts.filter(function (x) { return x.text && !x.thought; })
+                   .map(function (x) { return x.text; }).join('');
+    var s = out.indexOf('{'), t = out.lastIndexOf('}');
+    if (s < 0 || t < s) return null;
+    var r = JSON.parse(out.slice(s, t + 1));
+    return (r && typeof r === 'object') ? r : null;
+  } catch (e) { return null; }
 }
 
 function json_(o) {

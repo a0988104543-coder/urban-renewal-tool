@@ -146,7 +146,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 <div id="ocr-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;overflow:auto;">
   <div style="max-width:560px;margin:30px auto;background:#fff;border-radius:10px;padding:16px 18px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <div style="font-size:16px;font-weight:700;color:#1D9E75;">📷 截圖填入</div>
+      <div style="font-size:16px;font-weight:700;color:#1D9E75;">📷 截圖填入 <span id="ocr-ver" style="font-size:11px;font-weight:400;color:#aaa;"></span></div>
       <button onclick="closeOcr()" style="border:none;background:#eee;border-radius:6px;padding:4px 10px;cursor:pointer;">✕ 關閉</button>
     </div>
     <div id="ocr-setup" style="display:none;margin-bottom:10px;font-size:12px;color:#555;">
@@ -2982,9 +2982,10 @@ async function shareExport(){
 // ══════════════════════════════════════════════════════════════════
 const OCR_KEY='ur_ocr_url';
 let OCR={items:[],busy:false,seq:0,checked:{}};
+const OCR_VER='版本 2026-11-22';  // 改截圖填入時一併更新，用來確認手機載到的是不是新版
 function ocrUrl(){try{return localStorage.getItem(OCR_KEY)||'';}catch(_){return '';}}
 function ocrMsg(t,err){const m=document.getElementById('ocr-msg');if(m){m.textContent=t||'';m.style.color=err?'#D85A30':'#555';}}
-function openOcr(){document.getElementById('ocr-modal').style.display='block';ocrRender();}
+function openOcr(){document.getElementById('ocr-modal').style.display='block';document.getElementById('ocr-ver').textContent=OCR_VER;ocrRender();}
 function closeOcr(){document.getElementById('ocr-modal').style.display='none';OCR.items=[];OCR.checked={};ocrMsg('');}
 function ocrSetUrl(){
   const v=document.getElementById('ocr-url').value.trim();
@@ -3116,19 +3117,59 @@ function ocrRender(){
     let info='';
     if(it.status==='wait')info=url?'等待辨識…':'等待設定網址';
     else if(it.status==='run')info='辨識中…';
-    else if(it.status==='err')info=`<span style="color:#D85A30;">⚠ ${g5esc(it.err)}</span>`;
+    else if(it.status==='err')info=`<span style="color:#D85A30;word-break:break-all;">⚠ ${g5esc(String(it.err).slice(0,80))}</span>`;
+    else if(it.edit)info=ocrEditForm(it);
     else{
       const r=it.res;
-      if(r.type==='parcel')info=`${r.lot?'<b>'+g5esc(r.lot)+'</b>｜':''}面積 ${fmtN(r.area_m2)} m²｜現值 ${fmtN(r.ann)}｜地價 ${fmtN(r.lp)}`;
+      if(r.type==='parcel')info=`${r.lot?'<b>'+g5esc(r.lot)+'</b>｜':'<span style="color:#D85A30;">地號未讀到</span>｜'}面積 ${fmtN(r.area_m2)} m²｜現值 ${fmtN(r.ann)}｜地價 ${fmtN(r.lp)}`;
       else if(r.type==='stats')info=`土地總面積 ${fmtN(r.land_total_m2)} m²｜建物總面積 ${fmtN(r.bldg_total_m2)} m²`;
+      if(it.edited)info+=' <span style="color:#1D9E75;">（已手動修改）</span>';
     }
     const can=it.status==='ok'&&it.res.type!=='unknown';
-    return `<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:12px;">
-      ${can?`<input type="checkbox" ${it.use?'checked':''} onchange="OCR.items.find(x=>x.id===${it.id}).use=this.checked;ocrRender();"/>`:'<span style="width:13px;"></span>'}
-      ${it.thumb?`<img src="${it.thumb}" style="width:44px;height:44px;object-fit:cover;border-radius:4px;border:1px solid #eee;"/>`:''}
-      <div><b>圖${it.id}</b> ${it.status==='ok'?TL[it.res.type]:''}<div style="color:#666;">${info}</div></div>
+    const bs='border:1px solid #ddd;background:#fff;border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer;white-space:nowrap;';
+    let btns='';
+    if(it.status==='ok'&&!it.edit)btns+=`<button style="${bs}" onclick="ocrEdit(${it.id},true)">✎ 修改</button>`;
+    if(it.status==='ok'&&it.edit)btns+=`<button style="${bs}color:#1D9E75;" onclick="ocrEdit(${it.id},false)">✓ 完成</button>`;
+    if(it.status==='err'||(it.status==='ok'&&!it.edit))btns+=`<button style="${bs}" onclick="ocrRetry(${it.id})">↻ 重試</button>`;
+    if(it.status==='err')btns+=`<button style="${bs}" onclick="ocrManual(${it.id})">✎ 手動填</button>`;
+    if(it.status!=='run')btns+=`<button style="${bs}color:#D85A30;" onclick="ocrDel(${it.id})">🗑</button>`;
+    return `<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:12px;">
+      ${can?`<input type="checkbox" style="margin-top:4px;" ${it.use?'checked':''} onchange="OCR.items.find(x=>x.id===${it.id}).use=this.checked;ocrRenderRows();"/>`:'<span style="width:13px;flex:none;"></span>'}
+      ${it.thumb?`<img src="${it.thumb}" style="width:44px;height:44px;object-fit:cover;border-radius:4px;border:1px solid #eee;flex:none;"/>`:''}
+      <div style="flex:1;min-width:0;"><b>圖${it.id}</b> ${it.status==='ok'?TL[it.res.type]:''}<div style="color:#666;">${info}</div>
+        ${btns?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">${btns}</div>`:''}</div>
     </div>`;
   }).join('');
+  ocrRenderRows();
+}
+
+// 卡片的修改表單：改完欄位只重算下方確認表，不重畫卡片（手機上才不會跳掉輸入框）
+function ocrEditForm(it){
+  const r=it.res,F=r.type==='stats'
+    ?[['land_total_m2','土地總面積 m²'],['bldg_total_m2','建物總面積 m²']]
+    :[['lot','地段地號'],['area_m2','面積 m²'],['ann','公告現值 元/m²'],['lp','公告地價 元/m²']];
+  return '<div style="display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center;margin-top:4px;">'+F.map(([k,l])=>
+    `<span>${l}</span><input type="text" ${k==='lot'?'':'inputmode="decimal"'} value="${r[k]==null?'':g5esc(String(r[k]))}" style="font-size:16px;padding:4px 6px;width:100%;box-sizing:border-box;" onchange="ocrSetVal(${it.id},'${k}',this.value)"/>`
+  ).join('')+'</div>';
+}
+function ocrItem(id){return OCR.items.find(x=>x.id===id);}
+function ocrSetVal(id,k,v){
+  const it=ocrItem(id);if(!it||!it.res)return;
+  v=String(v).trim();
+  if(k==='lot')it.res.lot=v.replace(/\s+/g,'')||null;
+  else{const n=parseFloat(v.replace(/,/g,''));it.res[k]=isFinite(n)&&n>0?n:null;}
+  it.edited=true;ocrRenderRows();
+}
+function ocrEdit(id,on){const it=ocrItem(id);if(it){it.edit=on;ocrRender();}}
+function ocrDel(id){OCR.items=OCR.items.filter(x=>x.id!==id);ocrRender();ocrNext();}
+function ocrRetry(id){const it=ocrItem(id);if(!it||!it.thumb)return;Object.assign(it,{status:'wait',res:null,err:'',edit:false,edited:false,use:true});ocrRender();ocrNext();}
+function ocrManual(id){
+  const it=ocrItem(id);if(!it)return;
+  Object.assign(it,{status:'ok',err:'',edit:true,edited:true,use:true,res:{type:'parcel',lot:null,area_m2:null,ann:null,lp:null,land_total_m2:null,bldg_total_m2:null}});
+  ocrRender();
+}
+
+function ocrRenderRows(){
   const p=ocrPropose(OCR.items,gv('f-unit'),ocrCur());
   const done=OCR.items.length&&!OCR.items.some(x=>x.status==='wait'||x.status==='run');
   let h='';
@@ -3137,7 +3178,7 @@ function ocrRender(){
     h+=`<table class="rtbl" style="width:100%;margin-top:8px;font-size:12px;"><thead><tr><th></th><th>第①頁欄位</th><th>目前</th><th>辨識值</th></tr></thead><tbody>`+
       p.rows.map(r=>{
         const ck=OCR.checked[r.id]??r.def;
-        return `<tr><td><input type="checkbox" ${ck?'checked':''} onchange="OCR.checked['${r.id}']=this.checked;ocrRender();"/></td><td>${r.label}</td><td>${r.cur===''?'（空）':g5esc(r.cur)}</td><td><b>${Number(r.val).toLocaleString('zh-TW')}</b> ${r.unit}</td></tr>`;
+        return `<tr><td><input type="checkbox" ${ck?'checked':''} onchange="OCR.checked['${r.id}']=this.checked;ocrRenderRows();"/></td><td>${r.label}</td><td>${r.cur===''?'（空）':g5esc(r.cur)}</td><td><b>${Number(r.val).toLocaleString('zh-TW')}</b> ${r.unit}</td></tr>`;
       }).join('')+'</tbody></table>';
     if(p.rows.some(r=>r.id==='f-area'&&r.src==='stats'))h+='<div style="font-size:11px;color:#999;margin-top:4px;">基地面積預設不勾：查詢範圍可能含道路用地，與試算基地不一定相同。</div>';
   }else if(done)h+='<div style="font-size:12px;color:#999;margin-top:8px;">沒有可以寫入的欄位</div>';
