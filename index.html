@@ -249,14 +249,14 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 <p class="sec">銷坪比 ／ 公設比 ／ 陽台比例</p>
 <div class="fx"><code>K = 總銷坪÷容積面積</code>　<code>P = 公設坪÷總銷坪</code>　<code>P=(K−1−B)÷K</code>　<code>K=(1+B)÷(1−P)</code>　B法規上限15%</div>
 <div class="g3" style="margin-top:10px;">
-  <div class="fd"><label>① 銷坪比 K（手動輸入）</label><input type="text" data-expr id="f-K" placeholder="例：1.50" min="1.01" max="3" step="0.01"/><div class="un">倍　藍框=自動推算</div><div class="hn ht" id="K-hint"></div></div>
+  <div class="fd"><label>① 銷坪比 K（手動輸入）</label><input type="text" data-expr id="f-K" value="1.58" placeholder="例：1.58" min="1.01" max="3" step="0.01"/><div class="un">倍　藍框=自動推算</div><div class="hn ht" id="K-hint"></div></div>
   <div class="fd"><label>② 公設比 P（手動輸入）</label><input type="text" data-expr id="f-P" placeholder="例：32" min="0" max="60" step="0.1"/><div class="un">%　藍框=自動推算</div><div class="hn ha" id="P-hint"></div></div>
   <div class="fd"><label>③ 陽台比例 B</label><input type="text" data-expr id="f-B" value="5" min="0" max="30" step="0.1"/><div class="un">%（法規上限15%）</div><div class="hn" id="B-hint"></div></div>
 </div>
 <hr class="div"/>
 <p class="sec">停車與地下室</p>
 <div class="g4">
-  <div class="fd"><label>預計戶數</label><input type="text" data-expr id="f-units" placeholder="例：20" min="1"/><div class="un">戶</div></div>
+  <div class="fd"><label>預計戶數</label><input type="text" data-expr id="f-units" placeholder="自動：總銷坪÷33" min="1"/><div class="un">戶　藍框=自動推算（總銷坪÷33，手改後不覆蓋，清空恢復自動）</div></div>
   <div class="fd"><label>汽車位面積</label><input type="text" data-expr id="f-parksize" value="12" min="8" max="20" step="0.5"/><div class="un">坪／位（預設12坪）</div></div>
   <div class="fd"><label>機車位面積</label><input type="text" data-expr id="f-motosize" value="1.9" min="1" max="5" step="0.1"/><div class="un">坪／位（預設1.9坪）</div></div>
   <div class="fd"><label>地下室開挖率</label><input type="text" data-expr id="f-excavate" value="70" min="30" max="100"/><div class="un">%（預設70%）</div></div>
@@ -289,7 +289,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 <p class="sec">樓高限制</p>
 <div class="g4">
   <div class="fd"><label>面前道路寬度 W</label><input type="text" data-expr id="f-W" placeholder="例：12" min="0" step="0.5"/><div class="un">公尺（m）</div></div>
-  <div class="fd"><label>退縮距離 D</label><input type="text" data-expr id="f-D" value="0" min="0" step="0.5"/><div class="un">公尺（無退縮填0）</div></div>
+  <div class="fd"><label>退縮距離 D</label><input type="text" data-expr id="f-D" value="6" min="0" step="0.5"/><div class="un">公尺（無退縮填0）</div></div>
   <div class="fd"><label>1樓層高 h₁</label><input type="text" data-expr id="f-h1" value="4.0" min="2.5" max="8" step="0.1"/><div class="un">公尺（預設4.0m）</div></div>
   <div class="fd"><label>標準層高 hₛ</label><input type="text" data-expr id="f-hs" value="3.2" min="2.5" max="6" step="0.1"/><div class="un">公尺（預設3.2m）</div></div>
 </div>
@@ -1098,6 +1098,7 @@ const MOTO_LAW={
   other:{txt:'機車：每滿<strong>150m²</strong>一位',calc:(m2,u)=>Math.ceil(m2/150)}
 };
 
+const UNIT_PING=33; // 預計戶數自動推算：每 33 銷坪一戶
 let lastKP='K';
 function syncKP(src){
   const Ki=document.getElementById('f-K'),Pi=document.getElementById('f-P'),Bi=document.getElementById('f-B');
@@ -1130,7 +1131,15 @@ function calcS1(){
   const unit=gv('f-unit'),areaRaw=gf('f-area'),far=gf('f-far')/100,bcr=gf('f-bcr')/100;
   const bonR=gf('f-bonus')/100,xfrR=gf('f-transfer')/100;
   const Kv=parseFloat(document.getElementById('f-K').value),Bv=gf('f-B'),Pv=parseFloat(document.getElementById('f-P').value);
-  const units=parseInt(document.getElementById('f-units').value)||0;
+  // 預計戶數：空白或藍框時自動＝總銷坪÷UNIT_PING（無條件捨去）；手改後不覆蓋
+  const Ui=document.getElementById('f-units');
+  if(Ui.value.trim()===''||Ui.classList.contains('auto')){
+    const aM2u=(gv('f-unit')==='ping'?gf('f-area')*P2M:gf('f-area'))||0,farU=gf('f-far')/100;
+    const totU=aM2u*farU*(1+gf('f-bonus')/100+gf('f-transfer')/100);
+    const n=Kv>0&&totU>0?Math.floor(totU*Kv*M2P/UNIT_PING):0;
+    if(n>0){Ui.value=n;Ui.classList.add('auto');}else{Ui.value='';Ui.classList.remove('auto');}
+  }
+  const units=parseInt(Ui.value)||0;
   const carSzP=gf('f-parksize')||12,motoSzP=gf('f-motosize')||1.9,excav=gf('f-excavate')/100||0.7;
   const W=parseFloat(document.getElementById('f-W').value),D=gf('f-D'),h1=gf('f-h1')||4,hs=gf('f-hs')||3.2;
   const city=gv('f-city'),zone=gv('f-zone');
@@ -2111,7 +2120,7 @@ function onZoneChange(){
 document.getElementById('f-zone').addEventListener('change',onZoneChange);
 document.getElementById('f-dist').addEventListener('change',()=>{if(gv('f-zone'))onZoneChange();});
 // Remove auto hint when user manually edits
-['f-far','f-bcr'].forEach(id=>{
+['f-far','f-bcr','f-units'].forEach(id=>{
   document.getElementById(id)?.addEventListener('input',function(){this.classList.remove('auto');});
 });
 document.getElementById('f-city').addEventListener('change',function(){if(gv('f-zone'))onZoneChange();else{updateUI1();calcS1();}});
@@ -2221,7 +2230,7 @@ function runCalc(){
 }
 
 // Init
-updateUI1();calcS1();checkPct();
+updateUI1();syncKP('K');checkPct(); // syncKP 會由預設 K 推出 P 並呼叫 calcS1
 // ══════════════════════════════════════════════════════════════════
 // SAVE / LOAD PROJECT
 // ══════════════════════════════════════════════════════════════════
@@ -2271,7 +2280,7 @@ function saveProject(){
   };
   ALL_FIELD_IDS.forEach(id=>{
     const el=document.getElementById(id);
-    if(el)data.inputs[id]=el.value;
+    if(el)data.inputs[id]=(id==='f-units'&&el.classList.contains('auto'))?'':el.value; // 自動戶數存空白，載入後重算
   });
   ['s2-vat-on','s2-input-on','s2-use-g5','f-unitmin','f-mech-legal'].forEach(id=>{
     const el=document.getElementById(id);
