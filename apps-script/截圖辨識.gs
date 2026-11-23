@@ -50,24 +50,32 @@ function doPost(e) {
   }
 }
 
+// 欄位與前端「複製提問」（index.html 的 OCR_PROMPT_CHAT）相同；改一邊要一起改
 var PROMPT = [
-  '你會看到一張台灣地政或都市更新網站的截圖。請先判斷類型，再只讀出指定的數字。',
+  '你會看到一張台灣地政網站的截圖（例如臺北市「整合資訊查詢結果」土地分頁、新北市地號查詢「分析」頁、查詢範圍的土地建物統計表）。請先判斷類型，再只讀出指定欄位。',
   '',
-  '類型 parcel：單一地號的土地資訊（例如「整合資訊查詢結果」的土地分頁），有「面積」「公告現值」「公告地價」。',
-  '  lot ＝ 地段地號，照圖上抄成一行文字，例如「福和段一小段0546-0000」（看不清楚填 null）',
-  '  area_m2 ＝ 面積（平方公尺）',
+  '類型 parcel：單一地號的土地資訊。',
+  '  lot ＝ 地段地號，寫成「段名＋母號-子號」，例如「福和段一小段0546-0000」「中原段0506-0000」（看不清楚填 null）',
+  '  city ＝ 縣市（臺北市／新北市）；截圖沒寫但從網站可確定時照填，否則 null',
+  '  district ＝ 行政區，例如「中正區」「中和區」',
+  '  area_m2 ＝ 面積或登記面積（平方公尺）',
   '  ann ＝ 公告現值（元／平方公尺）',
   '  lp ＝ 公告地價（元／平方公尺）',
-  '類型 stats：查詢範圍的土地建物統計表，有「土地登記總面積」「建物登記總面積」。',
-  '  land_total_m2 ＝ 土地登記總面積（平方公尺）',
-  '  bldg_total_m2 ＝ 建物登記總面積（平方公尺）',
+  '  zone_now ＝ 目前使用分區全名，例如「第三種商業區」「乙種工業區」「住宅區」；國字大寫（壹貳參肆）改寫成一二三四',
+  '  zone_orig ＝ 有寫「原屬○○」或「○○特（○○）」時，填原分區全名，例如「第三種住宅區」；沒有填 null',
+  '  pub_pct ＝ 公有持分比例（0～100）。權屬只有私有、自然人、法人時填 0；有國有、市有、縣有、公有時填其百分比合計；看不出來填 null',
+  '  own_text ＝ 權屬原文照抄，例如「私有(100%)」「法人公司96%自然人4%」',
+  '類型 stats：查詢範圍的土地建物統計表。',
+  '  land_count ＝ 土地登記筆數；land_total_m2 ＝ 土地登記總面積（平方公尺）',
+  '  bldg_count ＝ 建物登記筆數；bldg_total_m2 ＝ 建物登記總面積（平方公尺）',
   '都不是：type 填 unknown。',
   '',
   '規則：',
   '- 數字照圖上抄，去掉千分位逗號與單位，不要換算、不要四捨五入、不要推估。',
   '- 圖上看不到或看不清楚的欄位填 null，絕對不要猜。',
   '- 不屬於該類型的欄位一律填 null。',
-  '- 若單位不是平方公尺或元／平方公尺（例如坪、元／坪），該欄填 null。'
+  '- 若單位不是平方公尺或元／平方公尺（例如坪、元／坪），該欄填 null。',
+  '- 不要輸出所有權人姓名等個人資料。'
 ].join('\n');
 
 var SCHEMA = {
@@ -75,10 +83,18 @@ var SCHEMA = {
   properties: {
     type: { type: 'STRING', enum: ['parcel', 'stats', 'unknown'] },
     lot: { type: 'STRING', nullable: true },
+    city: { type: 'STRING', nullable: true },
+    district: { type: 'STRING', nullable: true },
     area_m2: { type: 'NUMBER', nullable: true },
     ann: { type: 'NUMBER', nullable: true },
     lp: { type: 'NUMBER', nullable: true },
+    zone_now: { type: 'STRING', nullable: true },
+    zone_orig: { type: 'STRING', nullable: true },
+    pub_pct: { type: 'NUMBER', nullable: true },
+    own_text: { type: 'STRING', nullable: true },
+    land_count: { type: 'NUMBER', nullable: true },
     land_total_m2: { type: 'NUMBER', nullable: true },
+    bldg_count: { type: 'NUMBER', nullable: true },
     bldg_total_m2: { type: 'NUMBER', nullable: true }
   },
   required: ['type']
@@ -100,7 +116,7 @@ function recognize_(b64, mime) {
       temperature: 0,
       responseMimeType: 'application/json',
       responseSchema: SCHEMA,
-      maxOutputTokens: 1024   // 防止模型卡住一直重複輸出同一個字
+      maxOutputTokens: 1536   // 防止模型卡住一直重複輸出同一個字（欄位變多，略為放寬）
     }
   };
   var opt = {
@@ -131,16 +147,24 @@ function recognize_(b64, mime) {
   }
   if (r === null) throw new Error('辨識失敗（' + errs.join('、') + '），請按重試');
 
-  // 只回傳約定的欄位，數字以外一律當 null
-  var keys = ['area_m2', 'ann', 'lp', 'land_total_m2', 'bldg_total_m2'];
+  // 只回傳約定的欄位，數字以外一律當 null（前端 ocrClean 會再整理一次）
+  var keys = ['area_m2', 'ann', 'lp', 'land_total_m2', 'bldg_total_m2', 'land_count', 'bldg_count'];
   var clean = { type: ['parcel', 'stats'].indexOf(r.type) >= 0 ? r.type : 'unknown', model: model };
   keys.forEach(function (k) {
     var v = r[k];
     clean[k] = (typeof v === 'number' && isFinite(v) && v > 0) ? v : null;
   });
-  // 地號：只留文字、去掉空白；不是 parcel 一律 null；格式不像「○○段…0000-0000」也當讀不到
-  var lot = (clean.type === 'parcel' && typeof r.lot === 'string') ? r.lot.replace(/\s+/g, '') : '';
-  clean.lot = (lot.length <= 30 && /段/.test(lot) && /\d{1,4}-\d{1,4}$/.test(lot)) ? lot : null;
+  var isP = clean.type === 'parcel';
+  // 地號：只留文字、去掉空白、去掉「地號」；格式要像「○○段0000-0000」或「○○段00000000」，否則當讀不到
+  var lot = (isP && typeof r.lot === 'string') ? r.lot.replace(/\s+/g, '').replace(/地號$/, '') : '';
+  clean.lot = (lot.length <= 30 && /段/.test(lot) && /段?\d{1,8}(-\d{1,4})?$/.test(lot)) ? lot : null;
+  // 文字欄位：限長度，避免模型卡住輸出一長串
+  ['city', 'district', 'zone_now', 'zone_orig', 'own_text'].forEach(function (k) {
+    var v = isP && typeof r[k] === 'string' ? r[k].trim() : '';
+    clean[k] = v && v.length <= 60 && v.toLowerCase() !== 'null' ? v : null;
+  });
+  var pp = r.pub_pct;
+  clean.pub_pct = (isP && typeof pp === 'number' && isFinite(pp) && pp >= 0 && pp <= 100) ? pp : null;
   return clean;
 }
 
