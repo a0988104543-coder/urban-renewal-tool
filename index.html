@@ -158,7 +158,14 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
       <button class="btn-n" style="flex:1;min-width:150px;" onclick="document.getElementById('ocr-file').click()">🖼 選擇截圖（可多張）</button>
       <button class="btn-p" style="flex:1;min-width:150px;" onclick="ocrPasteBtn()">📋 貼上截圖</button>
     </div>
-    <div style="font-size:11px;color:#999;margin-bottom:10px;">電腦也可以直接把截圖拖進視窗，或按 Ctrl+V 貼上。只讀「地號查詢（土地）」與「自劃區統計表」兩種截圖。</div>
+    <div style="font-size:11px;color:#999;margin-bottom:10px;">電腦也可以直接把截圖拖進視窗，或按 Ctrl+V 貼上。讀「地號查詢（土地）」與「統計表」兩種截圖：地號、行政區、面積、現值、地價、使用分區（含原分區）、公有比例。</div>
+    <details id="ocr-chat" style="margin-bottom:10px;border:1px solid #eee;border-radius:6px;padding:6px 10px;font-size:12px;color:#555;">
+      <summary style="cursor:pointer;color:#185FA5;">改用 Gemini／Claude App（不經 API）</summary>
+      <div style="margin:6px 0;">① 按「複製提問」② 到 Gemini 或 Claude 貼上提問，附上所有截圖 ③ 把回覆整段貼到下面，按「解析回覆」</div>
+      <div style="display:flex;gap:6px;margin-bottom:6px;"><button class="btn-p" style="padding:5px 12px;font-size:12px;" onclick="ocrCopyPrompt()">📋 複製提問</button>
+        <button class="btn-n" style="padding:5px 12px;font-size:12px;" onclick="ocrParsePaste()">解析回覆</button></div>
+      <textarea id="ocr-paste" rows="4" placeholder="把 Gemini／Claude 的回覆貼在這裡" style="width:100%;box-sizing:border-box;font-size:12px;"></textarea>
+    </details>
     <div id="ocr-msg" style="font-size:12px;margin-bottom:8px;"></div>
     <div id="ocr-list"></div>
     <div id="ocr-rows"></div>
@@ -203,7 +210,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <a href="https://bim.udd.gov.taipei/UDDPlanMap/" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:#E6F1FB;border:1px solid #B5D4F4;border-radius:6px;color:#185FA5;font-size:12px;text-decoration:none;font-weight:500;">🔗 都市計畫地理資訊</a>
 </div>
 <p class="sec">基本資料</p>
-<div class="g3">
+<div class="g4">
   <div class="fd"><label>地段號／案名</label><input type="text" id="f-name" placeholder="例：大安段一小段 123地號"/></div>
   <div class="fd"><label>縣市別</label>
     <select id="f-city">
@@ -212,16 +219,17 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
       <option value="other">其他縣市</option>
     </select>
   </div>
+  <div class="fd"><label>行政區</label><input type="text" id="f-dist" placeholder="例：中和區（可複填）"/><div class="un">新北依行政區對應容積率</div></div>
   <div class="fd"><label>使用分區</label>
-    <select id="f-zone">
-      <option value="">— 請選擇 —</option>
-      <option value="住一">第一種住宅區</option>
-      <option value="住二">第二種住宅區</option>
-      <option value="住三">第三種住宅區</option>
-      <option value="住四">第四種住宅區</option>
-      <option value="商業">商業區</option>
-      <option value="工業">工業區</option>
-    </select>
+    <input type="text" id="f-zone" list="f-zone-list" placeholder="例：住三、商三（可複填，用頓號分隔）"/>
+    <datalist id="f-zone-list">
+      <option value="住一"></option><option value="住二"></option><option value="住二之一"></option><option value="住二之二"></option>
+      <option value="住三"></option><option value="住三之一"></option><option value="住三之二"></option><option value="住四"></option><option value="住四之一"></option>
+      <option value="商一"></option><option value="商二"></option><option value="商三"></option><option value="商四"></option>
+      <option value="工二"></option><option value="工三"></option>
+      <option value="住宅區"></option><option value="商業區"></option><option value="工業區"></option>
+    </datalist>
+    <div class="un" id="zone-hint">單一分區會依縣市（新北另依行政區）帶入容積率、建蔽率</div>
   </div>
 </div>
 <hr class="div"/>
@@ -556,6 +564,17 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
       <div class="fd"><label>建融期間</label><input type="text" data-expr id="ub-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
     </div>
   </div>
+  <!-- 公有土地 -->
+  <div style="background:#F3F0FA;border:1px solid #D6CFEE;border-radius:7px;padding:10px 12px;margin-bottom:10px;">
+    <div style="font-size:11px;font-weight:600;color:#534AB7;margin-bottom:8px;letter-spacing:.05em;">公有土地</div>
+    <div class="fd" style="margin-bottom:6px;"><label>公有土地面積</label><input type="text" data-expr id="ub-pub-a" placeholder="空白＝第⑤頁地號明細的公有面積"/><div class="un" id="ub-pub-hint">坪</div></div>
+    <div class="fd" style="margin-bottom:6px;"><label>處理方式</label>
+      <select id="ub-pub-mode">
+        <option value="share">參與分回（公有地主依土地比例分回）</option>
+        <option value="buy">讓售／價購（由實施者取得，計入成本）</option>
+      </select></div>
+    <div class="fd"><label>價購單價</label><input type="text" data-expr id="ub-pub-price" placeholder="例：250"/><div class="un">萬元／坪（僅「讓售／價購」使用）</div></div>
+  </div>
   <!-- 舊建物相關 -->
   <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:6px;letter-spacing:.05em;">舊建物與補貼</div>
   <div class="fd" style="margin-bottom:6px;"><label>舊建物總樓地板面積（權狀）</label><input type="text" data-expr id="ub-oldfloor" value="0" min="0"/><div class="un">坪（預設帶入①頁現有建物面積）</div></div>
@@ -706,6 +725,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
   <p class="sec" style="margin:0;">地主列表</p>
   <button class="btn-n" onclick="addOwner()" style="padding:6px 16px;font-size:12px;">＋ 新增地主</button>
+  <button class="btn-p" onclick="addPubOwner()" style="padding:6px 16px;font-size:12px;" title="公有土地參與分回時使用；讓售／價購時公有地已由實施者取得，不必加">＋ 公有地主</button>
 </div>
 
 <div id="s4-list"></div>
@@ -742,17 +762,20 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 <div class="bbox">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
     <p class="sec" style="margin:0;">A. 地號明細（算基準容積、防災型基數、加權公告現值）</p>
-    <div style="display:flex;gap:6px;">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
       <button class="btn-p" style="padding:5px 12px;font-size:12px;" onclick="g5AddParcel(true)">從第①頁帶入</button>
       <button class="btn-n" style="padding:5px 12px;font-size:12px;" onclick="g5AddParcel(false)">＋ 新增地號</button>
+      <button class="btn-c" style="padding:5px 12px;font-size:12px;" onclick="g5SyncS1(true)">↑ 彙總寫入第①頁</button>
     </div>
   </div>
   <div style="overflow-x:auto;">
   <table class="rtbl" id="g5-ptbl">
-    <thead><tr><th>地號</th><th>面積 m²</th><th>法定容積率 %</th><th>公告現值 元/m²</th><th>計入建築基地</th><th>防災型原建築基地</th><th></th></tr></thead>
+    <thead><tr><th>地號</th><th>面積 m²</th><th>現行分區</th><th>原分區</th><th>法定容積率 %</th><th>建蔽率 %</th><th>公告現值 元/m²</th><th>公告地價 元/m²</th><th>公有 %</th><th>計入建築基地</th><th>防災型原建築基地</th><th></th></tr></thead>
     <tbody id="g5-pbody"></tbody>
   </table>
   </div>
+  <div id="g5-psum" class="fx" style="margin-top:6px;"></div>
+  <div class="un" style="margin-top:4px;">容積率、建蔽率依「原分區」優先（有條件分區以原分區計），查第①頁縣市／行政區的對照表自動帶入；手動改過的格子不再自動覆蓋（清空即恢復自動）。公有 %＝該筆土地公有持分比例。</div>
   <div class="fx">
     <code>基準容積 V₀ = Σ(計入建築基地之面積 × 容積率)</code>　<code>防災型基數 V₀′ = Σ(防災型原建築基地面積 × 容積率)</code><br/>
     <code>加權公告現值 = Σ(面積 × 現值) ÷ Σ面積</code>（第18條：更新事業計畫<strong>範圍內</strong>全部土地加權，含道路用地等不計入建築基地者）<br/>
@@ -948,6 +971,92 @@ function goStep(n){
 // ══════════════════════════════════════════════════════════════════
 const ZONE_PRE={'住一':[80,60],'住二':[160,45],'住三':[225,45],'住四':[300,50],'商業':[560,80],'工業':[200,55]};
 const ZONE_ABS={'住一':10.5,'住二':21};
+
+// ── 雙北使用分區對照表（2026-11-23 查證）──────────────────────────────
+// 值為 [容積率%, 建蔽率%]。
+// 臺北市：土地使用分區管制自治條例 §10（住）、§25（商）、§37（工）、§45 行政、§52 文教。
+//   住二之一～住四之一：臨接道路面寬 16m 以下仍用基本分區容積（§10Ⅲ），工具不自動判斷。
+//   商業區：容積率另不得超過「最寬道路寬度(m)×50%」，未達 300% 以 300% 計（§25），由 zoneRate 依路寬檢查。
+const ZT_TP={'住一':[60,30],'住二':[120,35],'住二之一':[160,35],'住二之二':[225,35],'住三':[225,45],'住三之一':[300,45],'住三之二':[400,45],
+  '住四':[300,50],'住四之一':[400,50],'商一':[360,55],'商二':[630,65],'商三':[560,65],'商四':[800,75],'工二':[200,45],'工三':[300,55],'行政':[400,35],'文教':[240,35]};
+// 新北市：建蔽率依「都市計畫法新北市施行細則」附表一（住宅 50、商業 70、工業 60/210、行政／文教 50/250）；
+//   容積率依各都市計畫區土管要點（行政區對應主要計畫區，特定區、整體開發區不適用）。
+//   v＝已用 108 年土管通檢書查證；其餘取自網路整理表，未逐一查證。
+const NT_BASE={'住':[null,50],'商':[null,70],'工業':[210,60],'行政':[250,50],'文教':[250,50]};
+const NT_FAR={
+  '板橋':{'住':300,'商':460},'三重':{'住':300,'商':440},'新莊':{'住':300,'商':440},'永和':{'住':300,'商':440},'中和':{'住':300,'商':440},
+  '三峽':{'住':210,'商':350},'蘆洲':{'住':200,'商':320},'淡水':{'住':200,'商':320},'石碇':{'住':280,'商':360},
+  '五股':{'住':200,'商':300},'泰山':{'住':200,'商':300},'石門':{'住':200,'商':280},'八里':{'住':200,'商':280,v:1},'瑞芳':{'住':200,'商':280},'貢寮':{'住':200,'商':280},
+  '深坑':{'住':200},'三芝':{'住':180,'商':240},'金山':{'住':180,'商':240},'雙溪':{'住':180,'商':240},'平溪':{'住':120,'商':240},'烏來':{'住':120,'商':180},'坪林':{'住':120,'商':180},
+  '土城':{'住一':180,'住二':240,'商一':240,'商二':320},
+  '樹林':{'住一':260,'住二':250,'住三':120,'商':380,v:1},
+  '鶯歌':{'住':200,'商':350,v:1},
+  '汐止':{'住一':200,'住二':240,'商':320},
+  '新店':{'住三':280,'住四':300,'商二':420,'商三':440,'景觀商':300,v:1},
+  '萬里':{'住二':180,'商二':300},
+  '林口':{'住一':120,'住二':150,'住三':180,'住四':240,'住五':300}
+};
+const NT_BCR_OVR={'新店':{'景觀商':60}};
+// 使用分區名稱 → 簡稱（住三、住三之一、商二、工二、住、商、工業、景觀商…）
+function normZone(s){
+  s=String(s||'').replace(/\s+/g,'').replace(/[（(].*$/,'')
+    .replace(/參/g,'三').replace(/貳/g,'二').replace(/壹/g,'一').replace(/肆/g,'四').replace(/伍/g,'五');
+  if(!s)return '';
+  let m;
+  if((m=s.match(/^第?([一二三四五])(?:之([一二]))?種住宅區?$/)))return '住'+m[1]+(m[2]?'之'+m[2]:'');
+  if((m=s.match(/^第?([一二三四])種商業區?$/)))return '商'+m[1];
+  if((m=s.match(/^第?([二三])種工業區?$/)))return '工'+m[1];
+  if(/^[甲乙特零]種?工業區?$|^[甲乙]工$/.test(s))return '工業';
+  if(/^景觀商業區?$/.test(s))return '景觀商';
+  if(s==='住宅區'||s==='住宅')return '住';
+  if(s==='商業區'||s==='商業')return '商';
+  if(s==='工業區')return '工業';
+  if(s==='行政區')return '行政';
+  if(s==='文教區')return '文教';
+  return s.replace(/區$/,'');
+}
+const normDist=s=>String(s||'').replace(/\s+/g,'').replace(/^(新北市|臺北市|台北市)/,'').replace(/區$/,'');
+// 查單一分區的 {far,bcr,src}；查不到回傳 null。city: taipei/newtaipei；dist: 行政區；W: 面前最寬道路（北市商業區用）
+function zoneRate(city,dist,zone,W){
+  const z=normZone(zone);if(!z)return null;
+  if(city==='taipei'){
+    const r=ZT_TP[z];if(!r)return null;
+    let far=r[0],note='北市土管自治條例';
+    if(/^商/.test(z)&&W>0){const cap=Math.max(300,W*50);if(cap<far){far=cap;note+=`；臨 ${W}m 路，商業區容積上限 ${cap}%（§25）`;}}
+    return {far,bcr:r[1],src:note};
+  }
+  if(city==='newtaipei'){
+    const d=normDist(dist),T=NT_FAR[d];
+    const gen=/^住/.test(z)?'住':/^(商|景觀商)/.test(z)?'商':z;
+    let far=null;
+    if(T)far=T[z]??(z!==gen?T[gen]:null)??null;
+    if(far==null&&z==='住'&&T){const ks=Object.keys(T).filter(k=>/^住/.test(k));if(ks.length===1)far=T[ks[0]];}
+    if(far==null&&z==='商'&&T){const ks=Object.keys(T).filter(k=>/^商/.test(k));if(ks.length===1)far=T[ks[0]];}
+    const base=NT_BASE[gen]||NT_BASE[z];
+    if(far==null&&base&&base[0]!=null)far=base[0];
+    const bcr=(NT_BCR_OVR[d]&&NT_BCR_OVR[d][z])??(base?base[1]:null);
+    if(far==null&&bcr==null)return null;
+    return {far,bcr,src:T?(d+(T.v?'（已查證）':'（網路整理表，未查證）')):'新北施行細則附表一'};
+  }
+  return null;
+}
+// 新北法定開挖率（施行細則§37）：500m² 以下部分＝建蔽率＋20%，超過部分＝建蔽率＋10%。回傳 %
+function ntExcavate(bcrPct,aM2){
+  if(!(aM2>0)||!(bcrPct>0))return null;
+  const ex=bcrPct/100*aM2+0.2*Math.min(aM2,500)+0.1*Math.max(aM2-500,0);
+  return Math.min(100,ex/aM2*100);
+}
+// 公有土地：面積（坪）優先用都更合建頁手填值，否則用第⑤頁地號明細的公有面積
+function pubInfo(){
+  const raw=gv('ub-pub-a');
+  let ping=parseFloat(raw),auto=false;
+  if(!(ping>=0)||raw===''){const S=typeof g5Summary==='function'?g5Summary():null;ping=S?S.pubSite*M2P:0;auto=true;}
+  const base=ST.aPing||0;
+  const r=base>0?Math.max(0,Math.min(1,ping/base)):0;
+  const h=document.getElementById('ub-pub-hint');
+  if(h)h.textContent=`坪${auto?'（自動：第⑤頁地號明細 '+fmt(ping,2)+' 坪）':''}，占基地 ${fmt(r*100,1)}%`;
+  return{ping,r,auto,mode:gv('ub-pub-mode')||'share',price:gf('ub-pub-price')||0};
+}
 // 臺北市土地使用分區管制自治條例§86-1（114/7/9）：依建築物用途；各用途分別累加後加總，零數設一輛
 // 計算面積不含室內停車、防空避難、騎樓、機械房、屋突等（本工具以「容積＋免計15%＋梯廳」為計算面積）
 const TP_PARK={
@@ -1427,17 +1536,23 @@ function calcS2(){
     const mgmtCost=constCost*mgmtR;
     const {tdr1:ub_tdr1,tdr2:ub_tdr2,tdrTotal:tdrCost}=calcTDR(c,constPerPing);
 
+    // 公有土地：讓售／價購時，公有地主那一份改由實施者取得，並計入取得成本
+    const PUB=pubInfo();
+    const pubBuy=PUB.mode==='buy'&&PUB.r>0;
+    const pubShareR=pubBuy?PUB.r:0;                       // 地主分回中屬於公有地、改歸實施者的比例
+    const pubCost=pubBuy?PUB.ping*pUrb*PUB.price*WAN:0;  // 元
+    const bR=mergerR+(1-mergerR)*pubShareR;               // 實施者實際分得比例
     // 車位分配：平面、機械各依合建比分配
-    const builderSaleP=c.sP*mergerR;
-    const builderPlanar=Math.round(c.planar*mergerR),builderMech=Math.round(c.mech*mergerR),builderCar=builderPlanar+builderMech;
+    const builderSaleP=c.sP*bR;
+    const builderPlanar=Math.round(c.planar*bR),builderMech=Math.round(c.mech*bR),builderCar=builderPlanar+builderMech;
     const builderRev=(builderSaleP*pPing+builderPlanar*pCar+builderMech*pMech)*WAN;
-    const ownerSaleP=c.sP*(1-mergerR);
+    const ownerSaleP=c.sP*(1-bR);
     const ownerPlanar=c.planar-builderPlanar,ownerMech=c.mech-builderMech,ownerCar=ownerPlanar+ownerMech;
     const ownerRev=(ownerSaleP*pPing+ownerPlanar*pCar+ownerMech*pMech)*WAN;
     const salesCost=builderRev*salesR;
 
-    // 土融：僅容移費用
-    const soilBase=tdrCost;
+    // 土融：容移費用＋公有土地價購
+    const soilBase=tdrCost+pubCost;
     const soilLoan=soilBase*soilLTV,soilInt=soilLoan*soilIR*soilPeriod;
     // 建融：建造成本＋建築師費＋管理基金
     const buildBase=constCost+c.archY+c.fundY;
@@ -1451,7 +1566,7 @@ function calcS2(){
     const swapCarRev=(ownerPlanar*pCar+ownerMech*pMech+negC*pCar)*WAN;
     const ub_vat=calcVAT(builderRev,swapHouseRev,swapCarRev,ub_inBase);
     const ub_propTax=ub_vat.propTax,vatY=ub_vat.vatY;
-    const totalCost=brokerY+evictComp+rentSub+roofSub+constCost+c.archY+c.fundY+salesCost+mgmtCost+consultFee+trustFee+tdrCost+soilInt+buildInt+ub_vat.netVat+ub_greenTotal; // 保證金只列示，不計成本
+    const totalCost=brokerY+evictComp+rentSub+roofSub+constCost+c.archY+c.fundY+salesCost+mgmtCost+consultFee+trustFee+tdrCost+pubCost+soilInt+buildInt+ub_vat.netVat+ub_greenTotal; // 保證金只列示，不計成本
     const netProfit=builderRev-totalCost;
     const ub_depCash=depCash(c);
     const equity=totalCost-soilLoan-buildLoan; // 保證金不計入自有資金
@@ -1461,7 +1576,7 @@ function calcS2(){
     const ownerNet=ownerRev-oldBuildValue-ownerVatPaid;
     const ownerROE=oldBuildValue>0?ownerNet/oldBuildValue:null;
 
-    res.urban={...c,depCash:ub_depCash,brokerY,evictComp,rentSub,roofSub,sub,constCost,consultFee,trustFee,tdrCost,ub_tdr1,ub_tdr2,mgmtCost,builderRev,builderSaleP,builderCar,builderPlanar,builderMech,ownerRev,ownerSaleP,ownerCar,ownerPlanar,ownerMech,salesCost,vatY,propTax:ub_propTax,inVat:ub_vat.inVat,ownerVatPaid,vatSaleBase:builderRev,vatSwapBase:swapHouseRev+swapCarRev,negP,negC,vatInBase:ub_inBase,greenMaint:ub_greenMaint,greenDeposit:ub_greenDeposit,greenTotal:ub_greenTotal,smartDeposit:ub_smartDeposit,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,mergerR,oldBuildValue,ownerNet,ownerROE,
+    res.urban={...c,depCash:ub_depCash,pubCost,pubBuy,pubR:PUB.r,pubPing:PUB.ping*pUrb,pubMode:PUB.mode,builderR:bR,brokerY,evictComp,rentSub,roofSub,sub,constCost,consultFee,trustFee,tdrCost,ub_tdr1,ub_tdr2,mgmtCost,builderRev,builderSaleP,builderCar,builderPlanar,builderMech,ownerRev,ownerSaleP,ownerCar,ownerPlanar,ownerMech,salesCost,vatY,propTax:ub_propTax,inVat:ub_vat.inVat,ownerVatPaid,vatSaleBase:builderRev,vatSwapBase:swapHouseRev+swapCarRev,negP,negC,vatInBase:ub_inBase,greenMaint:ub_greenMaint,greenDeposit:ub_greenDeposit,greenTotal:ub_greenTotal,smartDeposit:ub_smartDeposit,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,mergerR,oldBuildValue,ownerNet,ownerROE,
       _ub_const:gf('ub-const'),_ub_sir:soilIR*100,_ub_bir:buildIR*100,_ub_sltv:soilLTV*100,_ub_bltv:buildLTV*100,_ub_sp:soilPeriod,_ub_bp:buildPeriod};
   }
 
@@ -1558,6 +1673,8 @@ function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
       r=>`Item1(基地×容積率×容移×0.5×公告現值×0.25) ${fmtW(r.sl_tdr1,1)} + Item2(售價×0.85-造價)×基地坪×容積率×容移×0.5 ${fmtW(r.sl_tdr2,1)}`,
       r=>`Item1 ${fmtW(r.ub_tdr1,1)} + Item2 ${fmtW(r.ub_tdr2,1)}`,
       r=>`Item1 ${fmtW(r.cm_tdr1,1)} + Item2 ${fmtW(r.cm_tdr2,1)}`],
+    ['　公有土地價購',null,r=>r.pubCost||0,null,
+      null,r=>r.pubBuy?`公有 ${fmt(r.pubPing,2)}坪 × ${fmt(gf('ub-pub-price'),1)}萬（地主分回扣除公有 ${fmt(r.pubR*100,1)}%，改歸實施者）`:'公有地參與分回，不計',null],
     ['工程造價'],
     ['　建造成本',r=>r.constCost,r=>r.constCost,r=>r.constCost,
       r=>`${r._sl_const}萬/坪 × ${fmt(r.gP,1)}坪`,
@@ -1969,22 +2086,31 @@ document.getElementById('f-unit').addEventListener('change',function(){
   document.getElementById('area-lbl').textContent=u;
   document.getElementById('exist-lbl').textContent=u;calcS1();
 });
-document.getElementById('f-zone').addEventListener('change',function(){
-  const p=ZONE_PRE[this.value];
-  const farEl=document.getElementById('f-far'),bcrEl=document.getElementById('f-bcr');
+function onZoneChange(){
+  const v=document.getElementById('f-zone').value.trim();
+  const farEl=document.getElementById('f-far'),bcrEl=document.getElementById('f-bcr'),hint=document.getElementById('zone-hint');
+  const multi=/[、,，\/]/.test(v);
+  const r=multi?null:zoneRate(gv('f-city'),gv('f-dist'),v,parseFloat(gv('f-W')));
+  const p=r?[r.far,r.bcr]:ZONE_PRE[v];
   if(p){
-    farEl.value=p[0];farEl.classList.add('auto');
-    bcrEl.value=p[1];bcrEl.classList.add('auto');
+    if(p[0]!=null){farEl.value=p[0];farEl.classList.add('auto');}
+    else if(r){farEl.value='';farEl.classList.remove('auto');}  // 只查到建蔽率（例如該區住宅區分好幾種）：容積率清空，避免沿用舊值
+    if(p[1]!=null){bcrEl.value=p[1];bcrEl.classList.add('auto');}
   }
+  if(hint)hint.textContent=multi?'多個分區：容積率、建蔽率請由第⑤頁地號明細加權帶入'
+    :r&&r.far==null?`帶入依據：${r.src}。此區「${v}」有多個種別，容積率請填種別（例：住一）或手動填`
+    :r?('帶入依據：'+r.src):v?'對照表查不到此分區，請手動填容積率、建蔽率':'單一分區會依縣市（新北另依行政區）帶入容積率、建蔽率';
   const pu=document.getElementById('f-puse');
-  if(pu&&this.value)pu.value=this.value==='工業'?'other':'multi'; // 住宅區、商業區預設多戶住宅
+  if(pu&&v)pu.value=/工/.test(v)&&!/[住商]/.test(v)?'other':'multi'; // 住宅區、商業區預設多戶住宅
   updateUI1();calcS1();
-});
+}
+document.getElementById('f-zone').addEventListener('change',onZoneChange);
+document.getElementById('f-dist').addEventListener('change',()=>{if(gv('f-zone'))onZoneChange();});
 // Remove auto hint when user manually edits
 ['f-far','f-bcr'].forEach(id=>{
   document.getElementById(id)?.addEventListener('input',function(){this.classList.remove('auto');});
 });
-document.getElementById('f-city').addEventListener('change',function(){updateUI1();calcS1();});
+document.getElementById('f-city').addEventListener('change',function(){if(gv('f-zone'))onZoneChange();else{updateUI1();calcS1();}});
 ['f-area','f-exist','f-far','f-bcr','f-bonus','f-transfer','f-units','f-parksize','f-motosize','f-excavate','f-W','f-D','f-h1','f-hs','f-ann','f-lp','f-mkt','f-puse','f-comm-m2','f-comm-cls','f-unitmin','f-abv-mult','f-floors-ovr','f-bfl-ovr','f-car-set','f-moto-set','f-mech-n','f-mech-size','f-mech-legal'].forEach(id=>{
   const el=document.getElementById(id);if(el)el.addEventListener('change',calcS1);
 });
@@ -1999,6 +2125,9 @@ document.getElementById('f-city').addEventListener('change',function(){updateUI1
 });
 ['s2-vat-on','s2-swap-payer','s2-input-on'].forEach(id=>{
   const el=document.getElementById(id);if(el)el.addEventListener('change',calcS2);
+});
+['ub-pub-a','ub-pub-mode','ub-pub-price'].forEach(id=>{
+  const el=document.getElementById(id);if(el)el.addEventListener('change',()=>{calcS2();calcS4();});
 });
 ['s2-pself','s2-purb','s2-pcomm'].forEach(id=>{
   const el=document.getElementById(id);if(el)el.addEventListener('change',()=>{checkPct();calcS2();});
@@ -2097,7 +2226,7 @@ const SAVE_VERSION='1.2';
 // All input/select IDs to persist
 const ALL_FIELD_IDS=[
   // Step 1
-  'f-name','f-city','f-zone','f-area','f-unit','f-exist',
+  'f-name','f-city','f-dist','f-zone','f-area','f-unit','f-exist',
   'f-far','f-bcr','f-bonus','f-transfer',
   'f-K','f-P','f-B',
   'f-units','f-parksize','f-motosize','f-excavate',
@@ -2120,6 +2249,7 @@ const ALL_FIELD_IDS=[
   'ub-rent-shop-a','ub-rent-shop','ub-rent-off-a','ub-rent-off','ub-rent-home','ub-rent-months',
   'ub-ev-shop-n','ub-ev-shop','ub-ev-off-n','ub-ev-off','ub-roof-a','ub-roof-p',
   'ub-sir','ub-bir','ub-sltv','ub-bltv','ub-sp','ub-bp',
+  'ub-pub-a','ub-pub-mode','ub-pub-price',
   // Step 2 comm
   'cm-rate','cm-const','cm-oldprice','cm-oldfloor','cm-bir','cm-bltv','cm-bp',
 ];
@@ -2231,6 +2361,13 @@ function addOwner(){
   owners.push({name:'',landPing:0,weight:1,buildPing:0,oldPrice:0,type:'home',roofPing:0});
   renderOwnerInputs();calcS4();
 }
+function addPubOwner(){
+  const P=pubInfo();
+  if(P.mode==='buy'){alert('公有土地目前設為「讓售／價購」：公有那一份已改歸實施者，不需要再加公有地主。要參與分回請先到都更合建頁改處理方式。');return;}
+  if(!(P.ping>0)){alert('沒有公有土地面積：請在第⑤頁地號明細填「公有 %」，或在都更合建頁填公有土地面積。');return;}
+  owners.push({name:'公有土地',landPing:+P.ping.toFixed(2),weight:1,buildPing:0,oldPrice:0,type:'home',roofPing:0});
+  renderOwnerInputs();calcS4();
+}
 function deleteOwner(i){
   owners.splice(i,1);renderOwnerInputs();calcS4();
 }
@@ -2296,7 +2433,8 @@ function calcS4(){
   const ownerTotalSaleP=(u?.ownerSaleP||0)+(u?NV.ping:0);
   const ownerPlanarT=(u?.ownerPlanar||0)+(u?NV.car:0),ownerMechT=u?.ownerMech||0;
   const ownerTotalCar=ownerPlanarT+ownerMechT;
-  const basePing=ST.aPing||0;
+  // 公有地讓售／價購：地主分回已扣除公有那一份，私有地主改用「私有土地面積」算比例
+  const basePing=(ST.aPing||0)*(u?.pubBuy?(1-(u.pubR||0)):1);
   const pPing=s2?.pPing||0,pCar=s2?.pCar||0,pMech=gf('s2-mprice');
   const SB=subsidyVals(1);
   const rentPrice={home:SB.homeP,shop:SB.shopP,off:SB.offP};   // 元/坪/月
@@ -2420,30 +2558,105 @@ const g5esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replac
 
 function g5AddParcel(fromS1){
   if(fromS1){
-    g5Parcels.push({no:gv('f-name')||'第①頁基地',area:+(ST.aM2||0).toFixed(2),far:gf('f-far')||'',ann:gf('f-ann')||'',inSite:true,dis:false});
-  }else g5Parcels.push({no:'',area:'',far:gf('f-far')||'',ann:'',inSite:true,dis:false});
+    g5Parcels.push({no:gv('f-name')||'第①頁基地',area:+(ST.aM2||0).toFixed(2),zone:gv('f-zone'),zoneOrig:'',far:gf('f-far')||'',bcr:gf('f-bcr')||'',ann:gf('f-ann')||'',lp:gf('f-lp')||'',pub:'',inSite:true,dis:false,farMan:true,bcrMan:true});
+  }else g5Parcels.push({no:'',area:'',zone:'',zoneOrig:'',far:'',bcr:'',ann:'',lp:'',pub:'',inSite:true,dis:false});
   g5RenderParcels();calcG5();
 }
 function g5DelParcel(i){g5Parcels.splice(i,1);g5RenderParcels();calcG5();}
+// 依分區自動帶入容積率／建蔽率（原分區優先；手動改過的不動）
+function g5AutoRate(p){
+  const z=p.zoneOrig||p.zone;
+  const r=z?zoneRate(p.city||gv('f-city'),p.dist||gv('f-dist'),z,parseFloat(gv('f-W'))):null;
+  p.rateSrc=r?r.src:(z?'對照表查不到':'');
+  if(!p.farMan)p.far=r&&r.far!=null?r.far:'';   // 查不到就留空（加權時略過並提示），不沿用舊值
+  if(!p.bcrMan)p.bcr=r&&r.bcr!=null?r.bcr:'';
+}
 function g5SetParcel(i,k,el){
   const p=g5Parcels[i];if(!p)return;
   if(k==='inSite'||k==='dis')p[k]=el.checked;
-  else if(k==='no')p[k]=el.value;
-  else p[k]=parseFloat(el.value)||0;
-  calcG5();
+  else if(k==='no'||k==='zone'||k==='zoneOrig'){p[k]=el.value.trim();if(k!=='no'){g5AutoRate(p);g5RenderParcels();}}
+  else if(k==='far'||k==='bcr'){
+    const v=el.value.trim();
+    if(v===''){p[k+'Man']=false;g5AutoRate(p);g5RenderParcels();}
+    else{p[k]=parseFloat(v)||0;p[k+'Man']=true;}
+  }
+  else if(k==='pub'){const v=el.value.trim();p.pub=v===''?'':Math.max(0,Math.min(100,parseFloat(v)||0));}
+  else p[k]=el.value.trim()===''?'':(parseFloat(el.value)||0);
+  g5RenderSum();calcG5();
 }
 function g5RenderParcels(){
   const tb=document.getElementById('g5-pbody');if(!tb)return;
-  if(!g5Parcels.length){tb.innerHTML='<tr><td colspan="7" style="color:#aaa;">尚未輸入地號：使用第①頁基地面積、容積率與公告現值。</td></tr>';return;}
-  const inp=(i,k,v,w)=>`<input type="text" ${k==='no'?'':'data-expr'} value="${g5esc(v)}" onchange="g5SetParcel(${i},'${k}',this)" style="width:${w}px;font-size:12px;padding:4px 6px;border:1px solid #ddd;border-radius:5px;"/>`;
-  tb.innerHTML=g5Parcels.map((p,i)=>`<tr>
+  if(!g5Parcels.length){tb.innerHTML='<tr><td colspan="12" style="color:#aaa;">尚未輸入地號：使用第①頁基地面積、容積率與公告現值。</td></tr>';g5RenderSum();return;}
+  const inp=(i,k,v,w,auto)=>`<input type="text" ${['no','zone','zoneOrig'].includes(k)?'':'data-expr'} value="${g5esc(v)}" onchange="g5SetParcel(${i},'${k}',this)" style="width:${w}px;font-size:12px;padding:4px 6px;border:1px solid ${auto?'#B5D4F4':'#ddd'};border-radius:5px;${auto?'background:#F4F9FE;':''}"/>`;
+  tb.innerHTML=g5Parcels.map((p,i)=>`<tr title="${g5esc(p.rateSrc||'')}">
     <td>${inp(i,'no',p.no,130)}</td>
-    <td>${inp(i,'area',p.area,90)}</td>
-    <td>${inp(i,'far',p.far,60)}</td>
-    <td>${inp(i,'ann',p.ann,100)}</td>
+    <td>${inp(i,'area',p.area,80)}</td>
+    <td>${inp(i,'zone',p.zone||'',60)}</td>
+    <td>${inp(i,'zoneOrig',p.zoneOrig||'',60)}</td>
+    <td>${inp(i,'far',p.far,55,!p.farMan&&p.far!=='')}</td>
+    <td>${inp(i,'bcr',p.bcr??'',45,!p.bcrMan&&p.bcr!=='')}</td>
+    <td>${inp(i,'ann',p.ann,85)}</td>
+    <td>${inp(i,'lp',p.lp??'',85)}</td>
+    <td>${inp(i,'pub',p.pub??'',45)}</td>
     <td style="text-align:center;"><input type="checkbox" ${p.inSite?'checked':''} onchange="g5SetParcel(${i},'inSite',this)"/></td>
     <td style="text-align:center;"><input type="checkbox" ${p.dis?'checked':''} onchange="g5SetParcel(${i},'dis',this)"/></td>
     <td><button class="btn-p" style="padding:2px 8px;font-size:11px;" onclick="g5DelParcel(${i})">刪除</button></td></tr>`).join('');
+  g5RenderSum();
+}
+// ── 地號彙總（面積加權）──
+function g5Summary(){return g5SummaryOf(g5Parcels);}
+function g5SummaryOf(list){
+  const P=list.filter(p=>+p.area>0);
+  if(!P.length)return null;
+  const site=P.filter(p=>p.inSite);
+  const sum=(arr,f)=>arr.reduce((s,p)=>s+f(p),0);
+  const wavg=(arr,k)=>{const a=arr.filter(p=>p[k]!==''&&p[k]!=null&&+p[k]>0);const A=sum(a,p=>+p.area);return A>0?{v:sum(a,p=>+p.area*+p[k])/A,n:a.length}:null;};
+  const uniq=a=>[...new Set(a.filter(Boolean))];
+  const areaAll=sum(P,p=>+p.area),areaSite=sum(site,p=>+p.area);
+  const pubM2=sum(P,p=>+p.area*(+p.pub||0)/100);
+  const pubSite=sum(site,p=>+p.area*(+p.pub||0)/100);
+  return{
+    n:P.length,nSite:site.length,areaAll,areaSite,
+    zones:uniq(site.map(p=>normZone(p.zoneOrig||p.zone))),
+    zonesNow:uniq(site.map(p=>normZone(p.zone))),
+    dists:uniq(P.map(p=>p.dist?normDist(p.dist)+'區':'')),
+    city:uniq(P.map(p=>p.city)),
+    far:wavg(site,'far'),bcr:wavg(site,'bcr'),ann:wavg(P,'ann'),lp:wavg(P,'lp'),
+    farMiss:site.filter(p=>!(+p.far>0)).length,bcrMiss:site.filter(p=>!(+p.bcr>0)).length,
+    pubM2,pubSite,pubR:areaSite>0?pubSite/areaSite:0
+  };
+}
+function g5RenderSum(){
+  const el=document.getElementById('g5-psum');if(!el)return;
+  const S=g5Summary();
+  if(!S){el.innerHTML='';return;}
+  const f=(v,d)=>v==null?'—':fmt(v,d);
+  el.innerHTML=`<b>彙總（${S.n} 筆，計入建築基地 ${S.nSite} 筆）</b>：建築基地 ${f(S.areaSite,2)} m²（${f(S.areaSite*M2P,2)} 坪）`
+    +`｜計算分區 ${S.zones.join('、')||'—'}｜加權容積率 ${S.far?f(S.far.v,1)+'%':'—'}｜加權建蔽率 ${S.bcr?f(S.bcr.v,1)+'%':'—'}`
+    +`<br/>加權公告現值 ${S.ann?f(S.ann.v,0):'—'} 元/m²｜加權公告地價 ${S.lp?f(S.lp.v,0):'—'} 元/m²（含不計入建築基地者）`
+    +`｜公有土地 ${f(S.pubSite,2)} m²（${f(S.pubSite*M2P,2)} 坪，${f(S.pubR*100,1)}%）`
+    +(S.farMiss||S.bcrMiss?`<br/><span style="color:#D85A30;">⚠ ${S.farMiss?S.farMiss+' 筆缺容積率':''}${S.farMiss&&S.bcrMiss?'、':''}${S.bcrMiss?S.bcrMiss+' 筆缺建蔽率':''}，加權時略過這些地號</span>`:'');
+}
+// 地號彙總 → 第①頁（縣市、行政區、分區、面積、容積率、建蔽率、開挖率、現值、地價）。回傳寫入的欄位數
+function g5SyncS1(manual){
+  const S=g5Summary();
+  if(!S){if(manual)alert('地號明細沒有面積，無法彙總');return 0;}
+  const set=(id,v)=>{const e=document.getElementById(id);if(e&&v!=null&&v!==''){e.value=v;e.classList.remove('expr-err');return 1;}return 0;};
+  let n=0;
+  if(S.city.length===1)n+=set('f-city',S.city[0]);
+  if(S.dists.length)n+=set('f-dist',S.dists.join('、'));
+  if(S.zones.length)n+=set('f-zone',S.zones.join('、'));
+  const unit=gv('f-unit');
+  n+=set('f-area',unit==='m2'?+S.areaSite.toFixed(2):+(S.areaSite*M2P).toFixed(2));
+  if(S.far){n+=set('f-far',+S.far.v.toFixed(2));document.getElementById('f-far').classList.add('auto');}
+  if(S.bcr){n+=set('f-bcr',+S.bcr.v.toFixed(2));document.getElementById('f-bcr').classList.add('auto');}
+  if(gv('f-city')==='newtaipei'&&S.bcr){const ex=ntExcavate(S.bcr.v,S.areaSite);if(ex!=null)n+=set('f-excavate',+ex.toFixed(1));}
+  if(S.ann)n+=set('f-ann',Math.round(S.ann.v));
+  if(S.lp)n+=set('f-lp',Math.round(S.lp.v));
+  const zh=document.getElementById('zone-hint');if(zh)zh.textContent=`由第⑤頁 ${S.nSite} 筆地號加權帶入`;
+  runCalc();
+  if(manual){const st=document.getElementById('save-status');if(st){st.textContent=`✓ 地號彙總已寫入第①頁 ${n} 個欄位`;setTimeout(()=>{st.textContent='';},5000);}}
+  return n;
 }
 
 // ── 方案 ──
@@ -2686,7 +2899,9 @@ function g5Import(d){
   g5Parcels=[];g5Scens=[g5NewScen('方案A')];g5Cur=0;g5GreenLawTouched=false;
   if(d){
     Object.entries(d.fields||{}).forEach(([id,v])=>{const e=document.getElementById(id);if(!e)return;if(e.type==='checkbox')e.checked=v!=='0';else e.value=v;});
-    if(Array.isArray(d.parcels))g5Parcels=d.parcels;
+    // 舊版地號沒有分區欄位：原本填的容積率視為手動值，不被對照表覆蓋
+    if(Array.isArray(d.parcels))g5Parcels=d.parcels.map(p=>Object.assign({zone:'',zoneOrig:'',bcr:'',lp:'',pub:''},p,
+      p.farMan===undefined?{farMan:p.far!==''&&p.far!=null,bcrMan:p.bcr!==''&&p.bcr!=null}:{}));
     if(Array.isArray(d.scens)&&d.scens.length)g5Scens=d.scens.map(x=>Object.assign(g5NewScen(''),x));
     g5Cur=Math.min(d.cur||0,g5Scens.length-1);
     g5GreenLawTouched=!!d.greenLawTouched;
@@ -2823,7 +3038,7 @@ function expData(){
   const zoneEl=document.getElementById('f-zone');
   return{s2,u,NV,SB,pPing,pCar,pMech,ownerP,ownerCar,exist,ratio:exist>0?ownerP/exist:0,pingPerCar:ownerCar>0?ownerP/ownerCar:0,
     negVal,bNet,bRoa:u.totalCost>0?bNet/u.totalCost:null,bRoe:u.equity>0?bNet/u.equity:null,taxNet,
-    name:gv('f-name')||'都更試算',zone:zoneEl?.selectedOptions?.[0]?.text||'',taxMode:gv('s2-tax-mode')==='company'?'公司版（對齊Excel）':'加值型',
+    name:gv('f-name')||'都更試算',zone:zoneEl?.value||'',taxMode:gv('s2-tax-mode')==='company'?'公司版（對齊Excel）':'加值型',
     payer:gv('s2-tax-mode')==='company'?'builder':gv('s2-swap-payer')};
 }
 function expBuilder(d){
@@ -2844,9 +3059,10 @@ function expBuilder(d){
   k=expCard('成本與報酬',d.name,B,true);
   expKpis(k,[['建商毛利',expY(u.netProfit),'談判前'],['ROA',pct(u.roa),'毛利÷總成本'],['ROE',pct(u.roe),'毛利÷自有資金']]);
   const subs=u.rentSub+u.evictComp+(u.roofSub||0),ints=u.soilInt+u.buildInt,sell=u.salesCost+u.mgmtCost;
-  const other=u.totalCost-u.constCost-u.tdrCost-subs-d.taxNet-ints-sell;
+  const other=u.totalCost-u.constCost-u.tdrCost-(u.pubCost||0)-subs-d.taxNet-ints-sell;
   expSec(k,'收入與成本（萬元）');
   expRows(k,[['建商收入',expW(u.builderRev),'total'],['建造成本',expW(u.constCost)],['容積移轉費用',expW(u.tdrCost)],
+    ...(u.pubCost>0?[['公有土地價購',expW(u.pubCost)]]:[]),
     ['補貼（租金＋搬遷＋頂加）',expW(subs)],['營業稅（淨額）',expW(d.taxNet)],['融資利息',expW(ints)],
     ['銷售與管銷費用',expW(sell)],['其他（設計、基金、顧問、信託等）',expW(other)],['成本合計',expW(u.totalCost),'total']]);
   expNote(k,[`營業稅算法：${d.taxMode}；互易稅負擔：${d.payer==='owner'?'地主':d.payer==='off'?'不計':'建商'}`]);
@@ -2982,7 +3198,7 @@ async function shareExport(){
 // ══════════════════════════════════════════════════════════════════
 const OCR_KEY='ur_ocr_url';
 let OCR={items:[],busy:false,seq:0,checked:{}};
-const OCR_VER='版本 2026-11-22';  // 改截圖填入時一併更新，用來確認手機載到的是不是新版
+const OCR_VER='版本 2026-11-23';  // 改截圖填入時一併更新，用來確認手機載到的是不是新版
 function ocrUrl(){try{return localStorage.getItem(OCR_KEY)||'';}catch(_){return '';}}
 function ocrMsg(t,err){const m=document.getElementById('ocr-msg');if(m){m.textContent=t||'';m.style.color=err?'#D85A30':'#555';}}
 function openOcr(){document.getElementById('ocr-modal').style.display='block';document.getElementById('ocr-ver').textContent=OCR_VER;ocrRender();}
@@ -3042,9 +3258,103 @@ async function ocrNext(){
     const t=await r.text();
     let d;try{d=JSON.parse(t);}catch(_){throw new Error('Apps Script 回傳的不是 JSON（網址錯誤，或部署沒有開放「所有人」存取）');}
     if(!d.ok)throw new Error(d.error||'辨識失敗');
-    it.res=d;it.status='ok';
+    it.res=ocrClean(d);it.status='ok';
   }catch(e){it.status='err';it.err=e.message||'網路錯誤';}
   OCR.busy=false;ocrRender();ocrNext();
+}
+
+// ── 辨識結果整理（API 與「複製提問」兩條路共用）──
+// 地號統一成「段名＋母號-子號」：福和段一小段0534-0001 → 福和段一小段534-1；中原段05060000 → 中原段506
+function ocrLot(s){
+  s=String(s||'').replace(/\s+/g,'').replace(/地號$/,'').replace(/^.*?[市縣](?=.*段)/,'').replace(/^[^段]{1,3}區(?=.*段)/,'');
+  const m=s.match(/^(.{1,15}段)(\d{1,8})(?:-(\d{1,4}))?$/);if(!m)return null;
+  let a=m[2],b=m[3];
+  if(b==null){if(a.length===8){b=a.slice(4);a=a.slice(0,4);}else b='0';}
+  const A=parseInt(a,10),B=parseInt(b,10);
+  return isFinite(A)?m[1]+A+(B>0?'-'+B:''):null;
+}
+const ocrLotKey=s=>ocrLot(s)||String(s||'').replace(/\s+/g,'');
+const cityCode=s=>/臺北|台北/.test(s||'')?'taipei':/新北/.test(s||'')?'newtaipei':'';
+function ocrClean(r){
+  r=r||{};
+  const num=v=>{const n=typeof v==='number'?v:parseFloat(String(v??'').replace(/,/g,''));return isFinite(n)&&n>0?n:null;};
+  const str=v=>typeof v==='string'&&v.trim()&&v.trim().toLowerCase()!=='null'?v.trim().slice(0,60):null;
+  const t=['parcel','stats'].includes(r.type)?r.type:'unknown';
+  const out={type:t,model:r.model||''};
+  ['area_m2','ann','lp','land_total_m2','bldg_total_m2','land_count','bldg_count'].forEach(k=>{out[k]=num(r[k]);});
+  const P=t==='parcel';
+  out.lot=P?ocrLot(r.lot):null;
+  out.city=P?str(r.city):null;out.district=P?str(r.district):null;
+  let zn=P?str(r.zone_now):null,zo=P?str(r.zone_orig):null;
+  if(zn&&!zo){const m=zn.match(/原屬([^)）]+?區)/)||zn.match(/特[（(]([^)）]+)[)）]/);if(m)zo=m[1];}
+  out.zone_now=zn;out.zone_orig=zo;
+  const pp=typeof r.pub_pct==='number'?r.pub_pct:parseFloat(r.pub_pct);
+  out.pub_pct=P&&isFinite(pp)&&pp>=0&&pp<=100?pp:null;
+  out.own_text=P?str(r.own_text):null;
+  return out;
+}
+// 給 Gemini／Claude App 用的提問（「複製提問」）。欄位與 Apps Script 相同，差別是一次回傳全部截圖的 JSON 陣列
+const OCR_PROMPT_CHAT=`你是台灣地政資料整理助手。我會附上一張或多張地政網站截圖（例如：臺北市「整合資訊查詢結果」土地分頁、新北市地號查詢「分析」頁、查詢範圍的土地建物統計表）。
+請逐張判斷類型並抄出指定欄位，最後只輸出一個 JSON 陣列（每張截圖一個物件，依截圖順序），不要輸出任何其他文字。
+
+類型 parcel（單一地號的土地資訊）：
+- type："parcel"
+- lot：地段地號，寫成「段名＋母號-子號」，例如「福和段一小段0534-0001」「中原段0506-0000」
+- city：縣市（臺北市／新北市）；截圖沒寫但從網站可確定時照填，否則 null
+- district：行政區，例如「中正區」「中和區」
+- area_m2：面積或登記面積（平方公尺）
+- ann：公告現值（元／平方公尺）
+- lp：公告地價（元／平方公尺）
+- zone_now：目前使用分區全名，例如「第三種商業區」「乙種工業區」「住宅區」；國字大寫（壹貳參肆）改寫成一二三四
+- zone_orig：有寫「原屬○○」或「○○特（○○）」時，填原分區全名，例如「第三種住宅區」；沒有就填 null
+- pub_pct：公有持分比例（0～100 的數字）。權屬只有私有、自然人、法人時填 0；有國有、市有、縣有、公有時填其百分比合計；看不出來填 null
+- own_text：權屬原文，照抄（例如「私有(100%)」「法人公司96%自然人4%」）
+類型 stats（查詢範圍的統計表）：
+- type："stats"、land_count（土地登記筆數）、land_total_m2（土地登記總面積）、bldg_count（建物登記筆數）、bldg_total_m2（建物登記總面積）
+都不是：{"type":"unknown"}
+
+規則：
+1. 數字照圖上抄，去掉千分位逗號與單位，不換算、不四捨五入、不推估。
+2. 看不到或看不清楚的欄位填 null，絕對不要猜。
+3. 單位不是平方公尺或元／平方公尺（例如坪、元／坪）時，該欄填 null。
+4. 同一地號出現在多張截圖，只輸出一次。
+5. 不要輸出所有權人姓名等個人資料。
+
+輸出範例：
+[{"type":"parcel","lot":"福和段一小段0534-0001","city":"臺北市","district":"中正區","area_m2":116,"ann":410000,"lp":108000,"zone_now":"第三種商業區","zone_orig":"第三種住宅區","pub_pct":0,"own_text":"私有(100%)"},
+{"type":"stats","land_count":5,"land_total_m2":547.39,"bldg_count":12,"bldg_total_m2":1425.57}]`;
+async function ocrCopyPrompt(){
+  try{await navigator.clipboard.writeText(OCR_PROMPT_CHAT);ocrMsg('✓ 提問已複製：到 Gemini 或 Claude 貼上，並附上所有截圖');}
+  catch(_){const ta=document.getElementById('ocr-paste');ta.value=OCR_PROMPT_CHAT;ta.select();ocrMsg('瀏覽器不允許自動複製：提問已放進下面的框，請全選複製後再清空',true);}
+}
+// 解析貼回的回覆：抓出 JSON（可含 ```json 外框或前後說明文字）
+function ocrParsePaste(){
+  const ta=document.getElementById('ocr-paste');const t=(ta.value||'').trim();
+  if(!t){ocrMsg('請先貼上 Gemini／Claude 的回覆',true);return;}
+  let data=null;
+  const tryP=s=>{try{return JSON.parse(s);}catch(_){return null;}};
+  const s1=t.indexOf('['),e1=t.lastIndexOf(']'),s2=t.indexOf('{'),e2=t.lastIndexOf('}');
+  if(s1>=0&&e1>s1&&(s2<0||s1<s2))data=tryP(t.slice(s1,e1+1));
+  if(!data&&s2>=0&&e2>s2)data=tryP(t.slice(s2,e2+1));
+  if(data&&!Array.isArray(data))data=Array.isArray(data.items)?data.items:[data];
+  if(!Array.isArray(data)||!data.length){ocrMsg('看不懂這段回覆：請確認貼上的是 Gemini／Claude 輸出的 JSON',true);return;}
+  if(document.getElementById('ocr-modal').style.display!=='block')openOcr();
+  let n=0;
+  data.forEach(o=>{if(!o||typeof o!=='object')return;OCR.items.push({id:++OCR.seq,status:'ok',thumb:'',res:ocrClean(o),err:'',use:true,src:'chat'});n++;});
+  ta.value='';ocrMsg(`✓ 已讀入 ${n} 筆，請檢查下方結果`);ocrRender();
+}
+// 合併地號：同地號更新、新地號新增（純函式，預覽與寫入共用）
+function ocrMergeParcels(list,add){
+  const out=list.map(p=>({...p}));
+  add.forEach(q=>{
+    const ex=q.no?out.find(x=>ocrLotKey(x.no)===ocrLotKey(q.no)):null;
+    const upd={area:q.area};
+    ['ann','lp','zone','zoneOrig','pub','city','dist'].forEach(k=>{if(q[k]!=null&&q[k]!=='')upd[k]=q[k];});
+    if(ex){Object.assign(ex,upd);ex._upd=true;}
+    else out.push(Object.assign({no:q.no,area:'',zone:'',zoneOrig:'',far:'',bcr:'',ann:'',lp:'',pub:'',inSite:true,dis:false,_new:true},upd));
+  });
+  out.forEach(p=>{if(p._new||p._upd)g5AutoRate(p);});
+  return out;
 }
 
 // 純計算：由辨識結果算出要寫入的欄位（可單獨測試）
@@ -3060,9 +3370,11 @@ function ocrPropose(items,unit,cur){
     const a=P[i].res,b=P[j].res;
     if(a.area_m2===b.area_m2&&a.ann===b.ann&&a.lp===b.lp)warns.push(`${no(P[i])}、${no(P[j])} 數值完全相同，可能重複上傳，不要的請取消勾選`);
   }
-  // 公告現值／公告地價：一筆直接用；多筆依面積加權
+  // 同一地號出現兩次：只保留後面那張
+  {const seen={};P.forEach(x=>{const k=x.res.lot?ocrLotKey(x.res.lot):'';if(k){if(seen[k])warns.push(`${no(seen[k])}、${no(x)} 是同一地號 ${k}，寫入時以 ${no(x)} 為準`);seen[k]=x;}});}
+  // 公告現值／公告地價：一筆直接用；多筆依面積加權（有地號明細時改由「第①頁彙總」一起寫入）
   [['ann','f-ann','公告現值'],['lp','f-lp','公告地價']].forEach(([k,id,lbl])=>{
-    if(!P.length)return;
+    if(!P.length||P.some(x=>x.res.lot))return;
     const miss=P.filter(x=>x.res[k]==null);
     if(miss.length){warns.push(`${miss.map(no).join('、')} 讀不到${lbl}，${lbl}不寫入`);return;}
     let v;
@@ -3084,8 +3396,15 @@ function ocrPropose(items,unit,cur){
     if(vs.some(v=>v!==vs[0])){warns.push(`多張自劃區統計的${lbl.split('（')[0]}不一致，不寫入`);return;}
     rows.push({id,label:lbl,cur:cur[id]??'',val:toU(vs[0]),unit:uL,def,src:'stats'});
   });
-  // 沒有自劃區統計表時：基地面積＝各地號面積加總（預設勾選）
-  if(P.length&&!rows.some(r=>r.id==='f-area')){
+  // 統計表核對：筆數、土地總面積 vs 已讀到的地號
+  const sumA=P.reduce((s,x)=>s+(x.res.area_m2||0),0);
+  S.forEach(x=>{
+    const r=x.res;
+    if(r.land_count!=null&&P.length&&r.land_count!==P.length)warns.push(`統計表寫土地 ${r.land_count} 筆，目前只讀到 ${P.length} 筆地號截圖${r.land_total_m2!=null?`（缺 ${fmt(r.land_total_m2-sumA,2)} m²）`:''}，可能漏截`);
+    else if(r.land_total_m2!=null&&P.length&&Math.abs(r.land_total_m2-sumA)>0.05)warns.push(`統計表土地總面積 ${fmt(r.land_total_m2,2)} m²，地號面積加總 ${fmt(sumA,2)} m²，兩者不一致`);
+  });
+  // 沒有自劃區統計表、也沒有地號時：基地面積＝各地號面積加總（預設勾選）
+  if(P.length&&!P.some(x=>x.res.lot)&&!rows.some(r=>r.id==='f-area')){
     const noA=P.filter(x=>x.res.area_m2==null);
     if(noA.length)warns.push(`${noA.map(no).join('、')} 讀不到面積，基地面積不寫入`);
     else{
@@ -3098,15 +3417,26 @@ function ocrPropose(items,unit,cur){
     const key=v=>String(v||'').replace(/\s+/g,'');
     const noLot=P.filter(x=>!x.res.lot);
     if(noLot.length)warns.push(`${noLot.map(no).join('、')} 讀不到地號，地號明細表裡該列的地號會留空`);
-    const have=new Set((cur.__lots||[]).map(key).filter(Boolean));
-    const parcels=P.map(x=>({no:x.res.lot?key(x.res.lot):'',area:x.res.area_m2,ann:x.res.ann}));
-    const upd=parcels.filter(q=>q.no&&have.has(q.no)).length;
+    const have=new Set((cur.__lots||[]).map(ocrLotKey).filter(Boolean));
+    const parcels=P.map(x=>{const r=x.res;return{no:r.lot?key(r.lot):'',area:r.area_m2,ann:r.ann,lp:r.lp,zone:r.zone_now?normZone(r.zone_now):'',zoneOrig:r.zone_orig?normZone(r.zone_orig):'',pub:r.pub_pct??'',city:cityCode(r.city),dist:r.district||''};});
+    const upd=parcels.filter(q=>q.no&&have.has(ocrLotKey(q.no))).length;
     rows.push({id:'__parcels',label:`地號明細表（新增 ${parcels.length-upd} 筆、更新 ${upd} 筆）`,cur:(cur.__lots||[]).length?`已有 ${cur.__lots.length} 筆`:'',val:String(parcels.length),unit:'筆',def:true,parcels});
+    const noZone=P.filter(x=>!x.res.zone_now);
+    if(noZone.length)warns.push(`${noZone.map(no).join('、')} 讀不到使用分區，容積率、建蔽率要到第⑤頁手動填`);
+    const cond=P.filter(x=>x.res.zone_orig);
+    if(cond.length)warns.push(`${cond.map(no).join('、')} 是有條件分區，容積率依原分區（${[...new Set(cond.map(x=>normZone(x.res.zone_orig)))].join('、')}）計算`);
+    // 預覽：合併後的整案彙總
+    if(cur.__parcels){
+      const merged=ocrMergeParcels(cur.__parcels,parcels);
+      const Sm=g5SummaryOf(merged);
+      if(Sm)rows.push({id:'__sync',label:`第①頁：依地號明細彙總（${Sm.nSite} 筆）`,cur:'',val:'',unit:'',def:true,
+        disp:`${Sm.zones.join('、')||'分區—'}｜${fmt(Sm.areaSite,2)} m²｜容積 ${Sm.far?fmt(Sm.far.v,1)+'%':'—'}｜建蔽 ${Sm.bcr?fmt(Sm.bcr.v,1)+'%':'—'}｜現值 ${Sm.ann?fmt(Sm.ann.v,0):'—'}｜地價 ${Sm.lp?fmt(Sm.lp.v,0):'—'}${Sm.pubSite>0?`｜公有 ${fmt(Sm.pubR*100,1)}%`:''}`});
+    }
   }
   return{rows,warns};
 }
 
-function ocrCur(){const c={};['f-ann','f-lp','f-area','f-exist'].forEach(id=>{c[id]=document.getElementById(id)?.value||'';});c.__lots=g5Parcels.map(p=>p.no);return c;}
+function ocrCur(){const c={};['f-ann','f-lp','f-area','f-exist'].forEach(id=>{c[id]=document.getElementById(id)?.value||'';});c.__lots=g5Parcels.map(p=>p.no);c.__parcels=g5Parcels;return c;}
 
 function ocrRender(){
   const url=ocrUrl();
@@ -3121,8 +3451,9 @@ function ocrRender(){
     else if(it.edit)info=ocrEditForm(it);
     else{
       const r=it.res;
-      if(r.type==='parcel')info=`${r.lot?'<b>'+g5esc(r.lot)+'</b>｜':'<span style="color:#D85A30;">地號未讀到</span>｜'}面積 ${fmtN(r.area_m2)} m²｜現值 ${fmtN(r.ann)}｜地價 ${fmtN(r.lp)}`;
-      else if(r.type==='stats')info=`土地總面積 ${fmtN(r.land_total_m2)} m²｜建物總面積 ${fmtN(r.bldg_total_m2)} m²`;
+      if(r.type==='parcel')info=`${r.lot?'<b>'+g5esc(r.lot)+'</b>｜':'<span style="color:#D85A30;">地號未讀到</span>｜'}${r.district?g5esc(r.district)+'｜':''}面積 ${fmtN(r.area_m2)} m²｜現值 ${fmtN(r.ann)}｜地價 ${fmtN(r.lp)}`
+        +`<br/>分區 ${r.zone_now?g5esc(normZone(r.zone_now)):'<span style="color:#D85A30;">未讀到</span>'}${r.zone_orig?`（原 <b>${g5esc(normZone(r.zone_orig))}</b>，依原分區計）`:''}｜公有 ${r.pub_pct==null?'—':r.pub_pct+'%'}${r.own_text?'（'+g5esc(r.own_text)+'）':''}`;
+      else if(r.type==='stats')info=`土地 ${fmtN(r.land_count)} 筆、${fmtN(r.land_total_m2)} m²｜建物 ${fmtN(r.bldg_count)} 筆、${fmtN(r.bldg_total_m2)} m²`;
       if(it.edited)info+=' <span style="color:#1D9E75;">（已手動修改）</span>';
     }
     const can=it.status==='ok'&&it.res.type!=='unknown';
@@ -3130,7 +3461,7 @@ function ocrRender(){
     let btns='';
     if(it.status==='ok'&&!it.edit)btns+=`<button style="${bs}" onclick="ocrEdit(${it.id},true)">✎ 修改</button>`;
     if(it.status==='ok'&&it.edit)btns+=`<button style="${bs}color:#1D9E75;" onclick="ocrEdit(${it.id},false)">✓ 完成</button>`;
-    if(it.status==='err'||(it.status==='ok'&&!it.edit))btns+=`<button style="${bs}" onclick="ocrRetry(${it.id})">↻ 重試</button>`;
+    if(it.thumb&&(it.status==='err'||(it.status==='ok'&&!it.edit)))btns+=`<button style="${bs}" onclick="ocrRetry(${it.id})">↻ 重試</button>`;
     if(it.status==='err')btns+=`<button style="${bs}" onclick="ocrManual(${it.id})">✎ 手動填</button>`;
     if(it.status!=='run')btns+=`<button style="${bs}color:#D85A30;" onclick="ocrDel(${it.id})">🗑</button>`;
     return `<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:12px;">
@@ -3146,17 +3477,20 @@ function ocrRender(){
 // 卡片的修改表單：改完欄位只重算下方確認表，不重畫卡片（手機上才不會跳掉輸入框）
 function ocrEditForm(it){
   const r=it.res,F=r.type==='stats'
-    ?[['land_total_m2','土地總面積 m²'],['bldg_total_m2','建物總面積 m²']]
-    :[['lot','地段地號'],['area_m2','面積 m²'],['ann','公告現值 元/m²'],['lp','公告地價 元/m²']];
+    ?[['land_count','土地筆數'],['land_total_m2','土地總面積 m²'],['bldg_total_m2','建物總面積 m²']]
+    :[['lot','地段地號'],['district','行政區'],['area_m2','面積 m²'],['ann','公告現值 元/m²'],['lp','公告地價 元/m²'],['zone_now','現行分區'],['zone_orig','原分區'],['pub_pct','公有 %']];
   return '<div style="display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center;margin-top:4px;">'+F.map(([k,l])=>
-    `<span>${l}</span><input type="text" ${k==='lot'?'':'inputmode="decimal"'} value="${r[k]==null?'':g5esc(String(r[k]))}" style="font-size:16px;padding:4px 6px;width:100%;box-sizing:border-box;" onchange="ocrSetVal(${it.id},'${k}',this.value)"/>`
+    `<span>${l}</span><input type="text" ${OCR_TXT.includes(k)?'':'inputmode="decimal"'} value="${r[k]==null?'':g5esc(String(r[k]))}" style="font-size:16px;padding:4px 6px;width:100%;box-sizing:border-box;" onchange="ocrSetVal(${it.id},'${k}',this.value)"/>`
   ).join('')+'</div>';
 }
+const OCR_TXT=['lot','district','zone_now','zone_orig'];
 function ocrItem(id){return OCR.items.find(x=>x.id===id);}
 function ocrSetVal(id,k,v){
   const it=ocrItem(id);if(!it||!it.res)return;
   v=String(v).trim();
-  if(k==='lot')it.res.lot=v.replace(/\s+/g,'')||null;
+  if(k==='lot')it.res.lot=v?(ocrLot(v)||v.replace(/\s+/g,'')):null;
+  else if(OCR_TXT.includes(k))it.res[k]=v||null;
+  else if(k==='pub_pct'){const n=parseFloat(v);it.res[k]=isFinite(n)&&n>=0&&n<=100?n:null;}
   else{const n=parseFloat(v.replace(/,/g,''));it.res[k]=isFinite(n)&&n>0?n:null;}
   it.edited=true;ocrRenderRows();
 }
@@ -3165,7 +3499,7 @@ function ocrDel(id){OCR.items=OCR.items.filter(x=>x.id!==id);ocrRender();ocrNext
 function ocrRetry(id){const it=ocrItem(id);if(!it||!it.thumb)return;Object.assign(it,{status:'wait',res:null,err:'',edit:false,edited:false,use:true});ocrRender();ocrNext();}
 function ocrManual(id){
   const it=ocrItem(id);if(!it)return;
-  Object.assign(it,{status:'ok',err:'',edit:true,edited:true,use:true,res:{type:'parcel',lot:null,area_m2:null,ann:null,lp:null,land_total_m2:null,bldg_total_m2:null}});
+  Object.assign(it,{status:'ok',err:'',edit:true,edited:true,use:true,res:ocrClean({type:'parcel'})});
   ocrRender();
 }
 
@@ -3178,7 +3512,7 @@ function ocrRenderRows(){
     h+=`<table class="rtbl" style="width:100%;margin-top:8px;font-size:12px;"><thead><tr><th></th><th>第①頁欄位</th><th>目前</th><th>辨識值</th></tr></thead><tbody>`+
       p.rows.map(r=>{
         const ck=OCR.checked[r.id]??r.def;
-        return `<tr><td><input type="checkbox" ${ck?'checked':''} onchange="OCR.checked['${r.id}']=this.checked;ocrRenderRows();"/></td><td>${r.label}</td><td>${r.cur===''?'（空）':g5esc(r.cur)}</td><td><b>${Number(r.val).toLocaleString('zh-TW')}</b> ${r.unit}</td></tr>`;
+        return `<tr><td><input type="checkbox" ${ck?'checked':''} onchange="OCR.checked['${r.id}']=this.checked;ocrRenderRows();"/></td><td>${r.label}</td><td>${r.disp?'':r.cur===''?'（空）':g5esc(r.cur)}</td><td>${r.disp?g5esc(r.disp):`<b>${Number(r.val).toLocaleString('zh-TW')}</b> ${r.unit}`}</td></tr>`;
       }).join('')+'</tbody></table>';
     if(p.rows.some(r=>r.id==='f-area'&&r.src==='stats'))h+='<div style="font-size:11px;color:#999;margin-top:4px;">基地面積預設不勾：查詢範圍可能含道路用地，與試算基地不一定相同。</div>';
   }else if(done)h+='<div style="font-size:12px;color:#999;margin-top:8px;">沒有可以寫入的欄位</div>';
@@ -3192,21 +3526,19 @@ function ocrApply(){
   const p=ocrPropose(OCR.items,gv('f-unit'),ocrCur());
   const sel=p.rows.filter(r=>OCR.checked[r.id]??r.def);
   if(!sel.length)return;
+  // 順序：地號明細 → 第①頁彙總 → 其他單一欄位（統計表的基地面積若有勾，最後覆蓋彙總面積）
+  const pr=sel.find(r=>r.id==='__parcels');
+  if(pr){
+    g5Parcels=ocrMergeParcels(g5Parcels,pr.parcels).map(p=>{delete p._new;delete p._upd;return p;});
+    g5RenderParcels();calcG5();
+  }
+  if(sel.some(r=>r.id==='__sync'))g5SyncS1(false);
   sel.forEach(r=>{
-    if(r.id==='__parcels')return;
+    if(r.id==='__parcels'||r.id==='__sync')return;
     const el=document.getElementById(r.id);if(el){el.value=r.val;el.classList.remove('expr-err');}
   });
   runCalc();
-  const pr=sel.find(r=>r.id==='__parcels');
-  if(pr){
-    const far=gf('f-far')||'';
-    pr.parcels.forEach(q=>{
-      const ex=q.no?g5Parcels.find(x=>String(x.no||'').replace(/\s+/g,'')===q.no):null;
-      if(ex){ex.area=q.area;if(q.ann!=null)ex.ann=q.ann;}
-      else g5Parcels.push({no:q.no,area:q.area,far,ann:q.ann??'',inSite:true,dis:false});
-    });
-    g5RenderParcels();calcG5();
-  }
+  if(pr)calcG5();
   closeOcr();
   const st=document.getElementById('save-status');
   if(st){st.textContent=`✓ 截圖已填入 ${sel.length} 個欄位`;setTimeout(()=>{st.textContent='';},5000);}
