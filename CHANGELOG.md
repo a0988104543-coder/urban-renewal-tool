@@ -23,6 +23,9 @@
   - 新增「改用 Gemini／Claude App」：📋 複製提問 → 貼回回覆 → 解析，進同一個確認畫面（`OCR_PROMPT_CHAT`）。
   - `OCR_VER` 改為「版本 2026-11-23」。
 - **Apps Script 第 5 版**（`apps-script/截圖辨識.gs`）：PROMPT／SCHEMA 加上述欄位；地號格式放寬（接受 8 碼連寫）；`maxOutputTokens` 1024→1536。**線上部署要另外更新**（管理部署作業 → 編輯 → 建立新版本）；舊版 Apps Script 仍可用，只是讀不到分區等新欄位。
+- **線上 Apps Script 已更新為第 5 版**（11-23 17:12，沿用原部署，網址不變）。只換程式本體，線上開頭註解與 `DEFAULT_MODEL` 那兩行保留。
+  - 實測（Daniel 的 6 張截圖）：統計表全對；地號截圖常由 `gemini-3.5-flash-lite` 回答，會漏讀面積、現值、地價、原分區，原分區偶爾夾雜雜字（已讓 `normZone` 改抓開頭的完整分區名）。確認畫面會標「未讀到」，可用 ✎ 修改補。
+  - 試過把指令碼屬性 `GEMINI_MODEL` 改成 `gemini-3.8-flash` 優先：免費金鑰下 3.8-flash 一直失敗，6 張有 3 張逾時（2 分鐘），其餘仍由 flash-lite 回答。**已改回原順序** `gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-flash-lite-latest,gemini-3.8-flash`。之後若要提升準確度，可試 `gemini-3.5-flash`（非 lite）排第一；或直接用「改用 Gemini／Claude App」。
 - 測試：本機瀏覽器用 Daniel 的 4 筆福和段截圖數值（貼回 JSON）測試：原分區住三×3、商二×1 → 加權容積 272.15%、建蔽 47.33%、現值 415,239、地價 109,397、舊有樓地板 431.23 坪；總表 5 筆警告缺 75m²。新北中原段 506（乙種工業區）＋測試用住宅區 50% 公有 → 開挖率 70.1%；公有價購 60.5 坪×100 萬＝6,050 萬計入成本、地主分回減 2.87%。舊專案地號載入正常，無 JS 錯誤。**尚未用真的 Gemini API 測試新欄位**。
 
 ---
