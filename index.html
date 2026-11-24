@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"/></head>
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
 <body>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -120,6 +120,20 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 .neg-tag{display:inline-block;font-size:10px;padding:1px 7px;border-radius:10px;background:#FFF0C2;color:#854F0B;margin-left:4px;font-weight:500;}
 .delta-pos{color:#0F6E56;font-weight:600;}
 .delta-neg{color:#D85A30;font-weight:600;}
+/* 手機（窄螢幕）：分頁列可左右滑、多欄改兩欄、寬表格可左右滑；輸入框 16px 避免 iPhone 點選時自動放大 */
+@media (max-width:640px){
+  body{padding:.6rem;}
+  .snav{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .snav::-webkit-scrollbar{display:none;}
+  .snb{flex:0 0 auto;white-space:nowrap;padding:10px 12px;}
+  .tbar{flex-wrap:wrap;justify-content:flex-start !important;}
+  .tbar>button{white-space:nowrap;}
+  .tbar>#save-status{flex-basis:100%;order:9;}
+  .g3,.g4,.mcols,.s1-summary{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .fd input,.fd select{font-size:16px;}
+  .nav-btns{flex-wrap:wrap;gap:8px;}
+  #g5-ptbl{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+}
 </style>
 
 <div>
@@ -133,7 +147,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 </div>
 
 <!-- Save/Load toolbar -->
-<div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:14px;">
+<div class="tbar" style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:14px;">
   <span style="font-size:11px;color:#aaa;" id="save-status"></span>
   <input type="file" id="load-file" accept=".json" style="display:none" onchange="loadProject(this)"/>
   <button onclick="document.getElementById('load-file').click()" style="padding:5px 14px;font-size:12px;background:#fff;border:1px solid #ddd;border-radius:6px;cursor:pointer;color:#555;font-family:inherit;">📂 載入專案</button>
