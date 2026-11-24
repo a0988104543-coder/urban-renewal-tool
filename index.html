@@ -1040,7 +1040,14 @@ function zoneRate(city,dist,zone,W){
     if(far==null&&base&&base[0]!=null)far=base[0];
     const bcr=(NT_BCR_OVR[d]&&NT_BCR_OVR[d][z])??(base?base[1]:null);
     if(far==null&&bcr==null)return null;
-    return {far,bcr,src:T?(d+(T.v?'（已查證）':'（網路整理表，未查證）')):'新北施行細則附表一'};
+    let src=T?(d+(T.v?'（已查證）':'（網路整理表，未查證）')):'新北施行細則附表一';
+    // 各計畫區土管要點：面臨計畫道路或指定現有巷道寬度未達 8m，住宅區容積率 ≤200%、商業區 ≤320%
+    //（現有巷道可連通 8m 以上已開闢計畫道路且具公用地役權寬達 8m 者不受限，工具不判斷）
+    if(far!=null&&W>0&&W<8){
+      const cap=gen==='住'?200:gen==='商'?320:null;
+      if(cap&&far>cap){src+=`；臨 ${W}m 路（未達 8m），容積率上限 ${cap}%（原 ${far}%；若巷道可連通 8m 計畫道路則不受限，請手改）`;far=cap;}
+    }
+    return {far,bcr,src};
   }
   return null;
 }
@@ -2119,6 +2126,14 @@ function onZoneChange(){
 }
 document.getElementById('f-zone').addEventListener('change',onZoneChange);
 document.getElementById('f-dist').addEventListener('change',()=>{if(gv('f-zone'))onZoneChange();});
+// 路寬改變：北市商業區、新北未達 8m 的容積上限要重算（只動自動帶入的容積率，手改過的不動）
+document.getElementById('f-W').addEventListener('change',()=>{
+  if(typeof g5Parcels!=='undefined'&&g5Parcels.length){g5Parcels.forEach(g5AutoRate);g5RenderParcels();calcG5();}
+  const farEl=document.getElementById('f-far'),v=gv('f-zone');
+  if(!v||!(farEl.classList.contains('auto')||farEl.value.trim()===''))return;
+  if(/[、,，\/]/.test(v)){const S=g5Summary();if(S&&S.far){farEl.value=+S.far.v.toFixed(2);farEl.classList.add('auto');calcS1();}}
+  else onZoneChange();
+});
 // Remove auto hint when user manually edits
 ['f-far','f-bcr','f-units'].forEach(id=>{
   document.getElementById(id)?.addEventListener('input',function(){this.classList.remove('auto');});
