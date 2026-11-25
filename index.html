@@ -22,6 +22,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
 .fd label{font-size:12px;color:#555;}
 .fd input,.fd select{font-size:13px;padding:7px 10px;border-radius:6px;border:1px solid #ddd;background:#fff;color:#1a1a1a;width:100%;}
 .fd input:focus,.fd select:focus{outline:none;border-color:#1D9E75;box-shadow:0 0 0 2px rgba(29,158,117,.12);}
+.fee-row{display:flex;gap:6px;}
+.fee-row input{flex:1 1 0;min-width:4.5em;}
+.fd .fee-row select{width:auto;flex:0 1 auto;max-width:55%;padding-left:6px;padding-right:4px;}
 .fd input.auto{border-color:#378ADD;background:#f0f6ff;}
 .fd input.warn{border-color:#D85A30;background:#fff8f5;}
 .un{font-size:10.5px;color:#aaa;margin-top:2px;}
@@ -502,13 +505,13 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
     <div class="g3" style="margin-bottom:6px;">
       <div class="fd"><label>土融利率</label><input type="text" data-expr id="sl-sir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
       <div class="fd"><label>土融可貸成數</label><input type="text" data-expr id="sl-sltv" value="70" min="0" max="100" step="5"/><div class="un">%（預設70%）</div></div>
-      <div class="fd"><label>土融期間</label><input type="text" data-expr id="sl-sp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+      <div class="fd"><label>土融期間</label><input type="text" data-expr id="sl-sp" value="2" min="0" max="10" step="0.5"/><div class="un">年（全期計息，不×1/2）</div></div>
     </div>
     <div style="font-size:11px;font-weight:600;color:#378ADD;margin-bottom:8px;letter-spacing:.05em;">建築融資（基數：建造成本＋建築師費＋管理基金）</div>
     <div class="g3">
       <div class="fd"><label>建融利率</label><input type="text" data-expr id="sl-bir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
       <div class="fd"><label>建融可貸成數</label><input type="text" data-expr id="sl-bltv" value="50" min="0" max="100" step="5"/><div class="un">%（預設50%）</div></div>
-      <div class="fd"><label>建融期間</label><input type="text" data-expr id="sl-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+      <div class="fd"><label>建融期間</label><input type="text" data-expr id="sl-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年（利息×1/2，以平均動撥50%計）</div></div>
     </div>
   </div>
   <!-- 購地相關費用 -->
@@ -516,6 +519,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <div class="fd" style="margin-bottom:6px;"><label>仲介費率</label><input type="text" data-expr id="sl-broker" value="1" min="0" max="10" step="0.1"/><div class="un">%（購地成本）</div></div>
   <div class="fd" style="margin-bottom:6px;"><label>土增稅率</label><input type="text" data-expr id="sl-ltax" value="0" min="0" max="50" step="0.1"/><div class="un">%（購地成本）</div></div>
   <div class="fd"><label>契稅率</label><input type="text" data-expr id="sl-dtax" value="0" min="0" max="10" step="0.1"/><div class="un">%（購地成本）</div></div>
+  <!-- 其他費用 -->
+  <div style="font-size:11px;font-weight:600;color:#666;margin:10px 0 6px;letter-spacing:.05em;">其他費用</div>
+  <div class="fd" style="margin-bottom:6px;"><label>都更顧問費</label><div class="fee-row"><input type="text" data-expr id="sl-consult" value="1"/><select id="sl-consult-u"><option value="ping">萬/坪</option><option value="total">總價(萬)</option></select></div><div class="un" id="sl-consult-hint">萬元／坪 × 基地坪（預設1）</div></div>
+  <div class="fd"><label>信託費用</label><div class="fee-row"><input type="text" data-expr id="sl-trust" value="0.5"/><select id="sl-trust-u"><option value="ping">萬/坪</option><option value="total">總價(萬)</option></select></div><div class="un" id="sl-trust-hint">萬元／坪 × 基地坪（預設0.5）</div></div>
 </div>
 
 <!-- 都更合建 -->
@@ -569,13 +576,13 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
     <div class="g3" style="margin-bottom:6px;">
       <div class="fd"><label>土融利率</label><input type="text" data-expr id="ub-sir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
       <div class="fd"><label>土融可貸成數</label><input type="text" data-expr id="ub-sltv" value="70" min="0" max="100" step="5"/><div class="un">%（預設70%）</div></div>
-      <div class="fd"><label>土融期間</label><input type="text" data-expr id="ub-sp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+      <div class="fd"><label>土融期間</label><input type="text" data-expr id="ub-sp" value="2" min="0" max="10" step="0.5"/><div class="un">年（全期計息，不×1/2）</div></div>
     </div>
     <div style="font-size:11px;font-weight:600;color:#378ADD;margin-bottom:8px;letter-spacing:.05em;">建築融資（基數：建造成本＋建築師費＋管理基金）</div>
     <div class="g3">
       <div class="fd"><label>建融利率</label><input type="text" data-expr id="ub-bir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
       <div class="fd"><label>建融可貸成數</label><input type="text" data-expr id="ub-bltv" value="50" min="0" max="100" step="5"/><div class="un">%（預設50%）</div></div>
-      <div class="fd"><label>建融期間</label><input type="text" data-expr id="ub-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+      <div class="fd"><label>建融期間</label><input type="text" data-expr id="ub-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年（利息×1/2，以平均動撥50%計）</div></div>
     </div>
   </div>
   <!-- 公有土地 -->
@@ -621,6 +628,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <div class="fd" style="margin-bottom:10px;"><label>舊建物估價（地主ROE用）</label><input type="text" data-expr id="ub-oldprice" placeholder="例：70" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
   <!-- 其他費用 -->
   <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:6px;letter-spacing:.05em;">其他費用</div>
+  <div class="fd" style="margin-bottom:6px;"><label>都更顧問費</label><div class="fee-row"><input type="text" data-expr id="ub-consult" value="1"/><select id="ub-consult-u"><option value="ping">萬/坪</option><option value="total">總價(萬)</option></select></div><div class="un" id="ub-consult-hint">萬元／坪 × 基地坪（預設1）</div></div>
+  <div class="fd" style="margin-bottom:6px;"><label>信託費用</label><div class="fee-row"><input type="text" data-expr id="ub-trust" value="0.5"/><select id="ub-trust-u"><option value="ping">萬/坪</option><option value="total">總價(萬)</option></select></div><div class="un" id="ub-trust-hint">萬元／坪 × 基地坪（預設0.5）</div></div>
   <div class="fd"><label>中人費</label><input type="text" data-expr id="ub-broker" value="0" min="0"/><div class="un">萬元</div></div>
 </div>
 
@@ -637,7 +646,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
     <div class="g3">
       <div class="fd"><label>建融利率</label><input type="text" data-expr id="cm-bir" value="3.5" min="0" max="20" step="0.1"/><div class="un">%／年</div></div>
       <div class="fd"><label>建融可貸成數</label><input type="text" data-expr id="cm-bltv" value="50" min="0" max="100" step="5"/><div class="un">%（預設50%）</div></div>
-      <div class="fd"><label>建融期間</label><input type="text" data-expr id="cm-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年</div></div>
+      <div class="fd"><label>建融期間</label><input type="text" data-expr id="cm-bp" value="2" min="0" max="10" step="0.5"/><div class="un">年（利息×1/2，以平均動撥50%計）</div></div>
     </div>
   </div>
   <!-- 委託與舊建物 -->
@@ -646,6 +655,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:#fff;color:#1a1a1a;padding
   <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:6px;margin-top:10px;letter-spacing:.05em;">舊建物（委建戶ROE用）</div>
   <div class="fd" style="margin-bottom:6px;"><label>舊建物估價</label><input type="text" data-expr id="cm-oldprice" placeholder="例：70" min="0" step="0.1"/><div class="un">萬元／坪</div></div>
   <div class="fd"><label>舊建物面積</label><input type="text" data-expr id="cm-oldfloor" value="0" min="0"/><div class="un">坪</div></div>
+  <!-- 其他費用（地主自付） -->
+  <div style="font-size:11px;font-weight:600;color:#666;margin:10px 0 6px;letter-spacing:.05em;">其他費用（地主自付）</div>
+  <div class="fd" style="margin-bottom:6px;"><label>都更顧問費</label><div class="fee-row"><input type="text" data-expr id="cm-consult" value="1"/><select id="cm-consult-u"><option value="ping">萬/坪</option><option value="total">總價(萬)</option></select></div><div class="un" id="cm-consult-hint">萬元／坪 × 基地坪（預設1）</div></div>
+  <div class="fd"><label>信託費用</label><div class="fee-row"><input type="text" data-expr id="cm-trust" value="0.5"/><select id="cm-trust-u"><option value="ping">萬/坪</option><option value="total">總價(萬)</option></select></div><div class="un" id="cm-trust-hint">萬元／坪 × 基地坪（預設0.5）</div></div>
 </div>
 
 </div><!-- end mode-cols -->
@@ -1404,6 +1417,38 @@ function checkPct(){
 }
 
 // ══════════════════════════════════════════════════════════════════
+// STEP 2: 顧問費／信託費（萬/坪 或 總價萬元）
+// ══════════════════════════════════════════════════════════════════
+const FEE_MODE={'sl-consult':'s2-pself','sl-trust':'s2-pself','ub-consult':'s2-purb','ub-trust':'s2-purb','cm-consult':'s2-pcomm','cm-trust':'s2-pcomm'};
+const FEE_IDS=Object.keys(FEE_MODE);
+const FEE_DEF={consult:'1',trust:'0.5'}; // 預設 萬/坪（三種模式相同）
+function feeArea(id){return (ST.aPing||0)*gf(FEE_MODE[id])/100;} // 該模式分到的基地坪
+// 回傳元；同時更新欄位下方提示
+function feeYuan(id,aP){
+  const v=gf(id),tot=gv(id+'-u')==='total';
+  const wan=tot?v:v*aP;
+  const h=document.getElementById(id+'-hint');
+  if(h)h.textContent=tot?`總價（萬元）${aP>0?'，約 '+fmt(v/aP,2)+' 萬/坪':''}`:`萬元／坪 × ${fmt(aP,1)}坪 ＝ ${fmt(wan,0)} 萬`;
+  return wan*WAN;
+}
+function feeDesc(id,aP){
+  const v=gf(id);
+  return gv(id+'-u')==='total'?`總價 ${fmt(v,0)}萬`:`${fmt(aP,1)}坪 × ${fmt(v,2)}萬`;
+}
+// 切換單位：依該模式基地坪換算，金額不變
+function feeUnitChange(id){
+  const sel=document.getElementById(id+'-u'),inp=document.getElementById(id);
+  const prev=sel.dataset.prev||'ping',now=sel.value;sel.dataset.prev=now;
+  if(prev===now)return;
+  const aP=feeArea(id),v=gf(id);
+  if(aP>0&&inp.value.trim()!==''){
+    const nv=now==='total'?v*aP:v/aP,d=now==='total'?100:10000; // 總價取到小數2位、萬/坪取到小數4位，來回切換不失真
+    inp.value=String(Math.round(nv*d)/d);
+  }
+  calcS2();
+}
+
+// ══════════════════════════════════════════════════════════════════
 // STEP 2: MAIN CALCULATION
 // ══════════════════════════════════════════════════════════════════
 function calcS2(){
@@ -1511,7 +1556,7 @@ function calcS2(){
     const brokerFee=landCost*brokerR2;
     const landTax=landCost*ltaxR,deedTax=landCost*dtaxR;
     const constCost=constPerPing*c.gP;
-    const consultFee=c.aP*WAN;                  // 都更顧問費 坪×1萬
+    const consultFee=feeYuan('sl-consult',c.aP),trustFee=feeYuan('sl-trust',c.aP); // 顧問費、信託費（萬/坪×坪 或 總價）
     const salesRev=(c.sP*pPing+c.carVal)*WAN;
     const salesCost=salesRev*salesR;
     const mgmtCost=constCost*mgmtR;
@@ -1527,11 +1572,11 @@ function calcS2(){
     const {propTax:_sl_propTax,greenMaint:sl_greenMaint,greenDeposit:sl_greenDeposit,greenTotal:sl_greenTotal,smartDeposit:sl_smartDeposit}=calcNewTaxes(c,salesRev,c.legalCostWan,c.fundY);
     const sl_vat=calcVAT(salesRev,0,0,constCost+c.archY+mgmtCost+salesCost+consultFee);
     const sl_propTax=sl_vat.propTax;
-    const totalCost=landCost+brokerFee+landTax+deedTax+constCost+c.archY+c.fundY+salesCost+mgmtCost+consultFee+tdrCost+soilInt+buildInt+sl_vat.netVat+sl_greenTotal; // 保證金只列示，不計成本
+    const totalCost=landCost+brokerFee+landTax+deedTax+constCost+c.archY+c.fundY+salesCost+mgmtCost+consultFee+trustFee+tdrCost+soilInt+buildInt+sl_vat.netVat+sl_greenTotal; // 保證金只列示，不計成本
     const netProfit=salesRev-totalCost;
     const sl_depCash=depCash(c);
     const equity=totalCost-soilLoan-buildLoan; // 保證金不計入自有資金
-    res.self={...c,depCash:sl_depCash,landCost,brokerFee,landTax,deedTax,constCost,consultFee,tdrCost,sl_tdr1,sl_tdr2,salesRev,salesCost,mgmtCost,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,propTax:sl_propTax,greenMaint:sl_greenMaint,greenDeposit:sl_greenDeposit,greenTotal:sl_greenTotal,smartDeposit:sl_smartDeposit,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,vatY:sl_vat.vatY,inVat:sl_vat.inVat,vatSaleBase:salesRev,vatSwapBase:0,vatInBase:constCost+c.archY+mgmtCost+salesCost+consultFee,
+    res.self={...c,depCash:sl_depCash,landCost,brokerFee,landTax,deedTax,constCost,consultFee,trustFee,tdrCost,sl_tdr1,sl_tdr2,salesRev,salesCost,mgmtCost,soilBase,soilLoan,soilInt,buildBase,buildLoan,buildInt,propTax:sl_propTax,greenMaint:sl_greenMaint,greenDeposit:sl_greenDeposit,greenTotal:sl_greenTotal,smartDeposit:sl_smartDeposit,totalCost,netProfit,equity,roe:equity>0?netProfit/equity:null,roa:totalCost>0?netProfit/totalCost:null,vatY:sl_vat.vatY,inVat:sl_vat.inVat,vatSaleBase:salesRev,vatSwapBase:0,vatInBase:constCost+c.archY+mgmtCost+salesCost+consultFee,
       _sl_land:gf('sl-land'),_sl_const:gf('sl-const'),_sl_sir:soilIR*100,_sl_bir:buildIR*100,_sl_sltv:soilLTV*100,_sl_bltv:buildLTV*100,_sl_sp:soilPeriod,_sl_bp:buildPeriod};
   }
 
@@ -1566,7 +1611,7 @@ function calcS2(){
     const soilLTV=gf('ub-sltv')/100||0.7,buildLTV=gf('ub-bltv')/100||0.5;
 
     const constCost=constPerPing*c.gP;
-    const consultFee=c.aP*WAN,trustFee=c.aP*WAN;
+    const consultFee=feeYuan('ub-consult',c.aP),trustFee=feeYuan('ub-trust',c.aP);
     const mgmtCost=constCost*mgmtR;
     const {tdr1:ub_tdr1,tdr2:ub_tdr2,tdrTotal:tdrCost}=calcTDR(c,constPerPing);
 
@@ -1635,10 +1680,11 @@ function calcS2(){
     const buildBase=constCost+c.archY+c.fundY;
     const buildLoan=buildBase*buildLTV,buildInt=buildLoan*buildIR*buildPeriod*0.5;
     const {propTax:_cm_propTax,greenMaint:cm_greenMaint,greenDeposit:cm_greenDeposit,greenTotal:cm_greenTotal,smartDeposit:cm_smartDeposit}=calcNewTaxes(c,totalSalesRev,c.legalCostWan,c.fundY);
-    const cm_inBase=constCost+c.archY+mgmtCost+salesCost;
+    const consultFee=feeYuan('cm-consult',c.aP),trustFee=feeYuan('cm-trust',c.aP); // 地主自付
+    const cm_inBase=constCost+c.archY+mgmtCost+salesCost+consultFee;
     const cm_vat=calcVAT(totalSalesRev,0,0,cm_inBase);
     const cm_propTax=cm_vat.propTax;
-    const ownerSelfCost=constCost+c.archY+c.fundY+salesCost+mgmtCost+tdrCost+buildInt+cm_vat.netVat+cm_greenTotal; // 保證金只列示，不計成本
+    const ownerSelfCost=constCost+c.archY+c.fundY+salesCost+mgmtCost+consultFee+trustFee+tdrCost+buildInt+cm_vat.netVat+cm_greenTotal; // 保證金只列示，不計成本
     const ownerTotalPay=ownerSelfCost+commFee;
     const ownerNet=totalSalesRev-ownerTotalPay;
     const oldBuildValue=oldPricePerPing*oldFloorPing;
@@ -1646,7 +1692,7 @@ function calcS2(){
     const ownerInvest=oldBuildValue+commFee+ownerSelfCost;
     const ownerROE=ownerInvest>0?ownerNet/ownerInvest:null;
 
-    res.comm={...c,depCash:cm_depCash,commRate,commFee,tdrCost,cm_tdr1,cm_tdr2,totalSalesRev,constCost,mgmtCost,salesCost,propTax:cm_propTax,vatY:cm_vat.vatY,inVat:cm_vat.inVat,vatSaleBase:totalSalesRev,vatSwapBase:0,vatInBase:cm_inBase,greenMaint:cm_greenMaint,greenDeposit:cm_greenDeposit,greenTotal:cm_greenTotal,smartDeposit:cm_smartDeposit,buildBase,buildLoan,buildInt,ownerSelfCost,ownerTotalPay,ownerNet,oldBuildValue,ownerInvest,ownerROE,
+    res.comm={...c,depCash:cm_depCash,commRate,commFee,consultFee,trustFee,tdrCost,cm_tdr1,cm_tdr2,totalSalesRev,constCost,mgmtCost,salesCost,propTax:cm_propTax,vatY:cm_vat.vatY,inVat:cm_vat.inVat,vatSaleBase:totalSalesRev,vatSwapBase:0,vatInBase:cm_inBase,greenMaint:cm_greenMaint,greenDeposit:cm_greenDeposit,greenTotal:cm_greenTotal,smartDeposit:cm_smartDeposit,buildBase,buildLoan,buildInt,ownerSelfCost,ownerTotalPay,ownerNet,oldBuildValue,ownerInvest,ownerROE,
       _cm_const:gf('cm-const'),_cm_bir:buildIR*100,_cm_bltv:buildLTV*100,_cm_bp:buildPeriod};
   }
 
@@ -1731,10 +1777,10 @@ function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
       r=>`建造成本${fmtW(r.constCost,0)} × ${gf('s2-mr')}%`,
       r=>`建造成本${fmtW(r.constCost,0)} × ${gf('s2-mr')}%`,
       r=>`建造成本${fmtW(r.constCost,0)} × ${gf('s2-mr')}%`],
-    ['　都更顧問費',r=>r.consultFee,r=>r.consultFee,null,
-      r=>`${fmt(r.aP,1)}坪 × 1萬`,r=>`${fmt(r.aP,1)}坪 × 1萬`,null],
-    ['　信託費用',null,r=>r.trustFee,null,
-      null,r=>`${fmt(r.aP,1)}坪 × 1萬`,null],
+    ['　都更顧問費',r=>r.consultFee,r=>r.consultFee,r=>r.consultFee,
+      r=>feeDesc('sl-consult',r.aP),r=>feeDesc('ub-consult',r.aP),r=>feeDesc('cm-consult',r.aP)],
+    ['　信託費用',r=>r.trustFee,r=>r.trustFee,r=>r.trustFee,
+      r=>feeDesc('sl-trust',r.aP),r=>feeDesc('ub-trust',r.aP),r=>feeDesc('cm-trust',r.aP)],
     ['融資利息'],
     ['　土融利息',r=>r.soilInt,r=>r.soilInt,null,
       r=>`基數${fmtW(r.soilBase,0)}×${r._sl_sltv}%×${r._sl_sir}%×${r._sl_sp}年`,
@@ -1827,7 +1873,7 @@ function displayS2(res,blendedROE,blendedROA,totalRev,totalCost,totalProfit){
       const sd=res?.self&&selfDFn?selfDFn(res.self):null;
       const uv=res?.urban?(urbFn?fmtW(urbFn(res.urban)):' — '):'';
       const ud=res?.urban&&urbDFn?urbDFn(res.urban):null;
-      const cv=res?.comm?(typeof commVal==='string'?commVal:(commVal?fmtW(commVal):' — ')):'';
+      const cv=res?.comm?(typeof commVal==='string'?commVal:typeof commVal==='function'?fmtW(commVal(res.comm)):(commVal?fmtW(commVal):' — ')):'';
       const cd=res?.comm&&commDFn?(typeof commDFn==='function'?commDFn(res.comm):null):null;
       const mkTd=(val,det)=>{
         const td=document.createElement('td');td.style.textAlign='right';
@@ -2162,8 +2208,12 @@ document.getElementById('f-city').addEventListener('change',function(){if(gv('f-
  'sl-land','sl-broker','sl-ltax','sl-dtax','sl-const','sl-sir','sl-bir','sl-sltv','sl-bltv','sl-sp','sl-bp',
  's2-mprice','ub-rent-shop-a','ub-rent-shop','ub-rent-off-a','ub-rent-off','ub-rent-home','ub-rent-months','ub-ev-shop-n','ub-ev-shop','ub-ev-off-n','ub-ev-off','ub-roof-a','ub-roof-p',
  'ub-broker','ub-units','ub-evict','ub-oldfloor','ub-p-legal','ub-p-bonus','ub-p-tdr','ub-const','ub-oldprice','ub-sir','ub-bir','ub-sltv','ub-bltv','ub-sp','ub-bp',
- 'cm-rate','cm-const','cm-oldprice','cm-oldfloor','cm-bir','cm-bltv','cm-bp','ub-tdr-f1','ub-tdr-f2'].forEach(id=>{
+ 'cm-rate','cm-const','cm-oldprice','cm-oldfloor','cm-bir','cm-bltv','cm-bp','ub-tdr-f1','ub-tdr-f2',
+ ...FEE_IDS].forEach(id=>{
   const el=document.getElementById(id);if(el)el.addEventListener('change',calcS2);
+});
+FEE_IDS.forEach(id=>{
+  const el=document.getElementById(id+'-u');if(el)el.addEventListener('change',()=>feeUnitChange(id));
 });
 ['s2-vat-on','s2-swap-payer','s2-input-on'].forEach(id=>{
   const el=document.getElementById(id);if(el)el.addEventListener('change',calcS2);
@@ -2284,7 +2334,9 @@ const ALL_FIELD_IDS=[
   // Step 2 self
   'sl-land','sl-broker','sl-ltax','sl-dtax','sl-const',
   'sl-sir','sl-bir','sl-sltv','sl-bltv','sl-sp','sl-bp',
+  'sl-consult','sl-consult-u','sl-trust','sl-trust-u',
   // Step 2 urban
+  'ub-consult','ub-consult-u','ub-trust','ub-trust-u',
   'ub-tdr-f1','ub-tdr-f2','ub-p-legal','ub-p-bonus','ub-p-tdr',
   'ub-const','ub-broker','ub-units','ub-evict',
   'ub-oldfloor','ub-oldprice',
@@ -2294,6 +2346,7 @@ const ALL_FIELD_IDS=[
   'ub-pub-a','ub-pub-mode','ub-pub-price',
   // Step 2 comm
   'cm-rate','cm-const','cm-oldprice','cm-oldfloor','cm-bir','cm-bltv','cm-bp',
+  'cm-consult','cm-consult-u','cm-trust','cm-trust-u',
 ];
 
 function saveProject(){
@@ -2354,6 +2407,11 @@ function loadProject(input){
       setIf('ub-rent-home',isFinite(oldRent)?String(Math.round(oldRent*10000)):'1000');setIf('ub-rent-months','');
       setIf('ub-ev-shop-n','0');setIf('ub-ev-shop',oldEv);setIf('ub-ev-off-n','0');setIf('ub-ev-off',oldEv);
       setIf('ub-roof-a','');setIf('ub-roof-p','3');
+      // 舊專案沒有顧問費／信託費欄位：補預設（顧問費 1、信託費 0.5 萬/坪）
+      FEE_IDS.forEach(id=>{
+        setIf(id,FEE_DEF[id.split('-')[1]]);setIf(id+'-u','ping');
+        const u=document.getElementById(id+'-u');if(u)u.dataset.prev=u.value;
+      });
       setTaxMode(document.getElementById('s2-tax-mode')?.value||'vat',true);
       // ③頁談判讓步
       NEG=Object.assign({ping:'',car:'',cash:''},data.neg||{});
