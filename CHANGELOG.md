@@ -6,6 +6,15 @@
 
 ---
 
+## 2026-11-26｜Claude Code｜存檔加 `results` 區塊，給新的「都更稅費試算工具」讀
+
+- 原因：新工具「都更稅費試算工具」（a0988104543-coder.github.io/urban-renewal-tax）要從速算專案帶入總銷坪與各地主分回坪數、車位。這些是計算結果，原本存檔沒有。
+- `saveProject()` 多寫一個 `results`（由新函式 `s4Results()` 產生，算法與 `calcS4()` 相同、不碰畫面）：`sitePing`、`urbanSitePing`（都更合建部分基地坪）、`totalSalePing`（都更合建總銷坪）、`ownerSalePing`（地主總分回，含③頁讓坪）、`ownerPlanar`／`ownerMech`、`pricePing`／`priceCar`／`priceMech`、`swapPayer`、`ownerVatPaidWan`、`houseRatio`，以及 `owners[]`（`name`、`landPing`、`salePing`、`carPlanar`、`carMech`、`valueWan`、`vatWan`）。沒有都更合建模式時 `results` 為 null。
+- **本工具載入時不讀 `results`**，舊專案、兩個 skill 產生的 JSON 都不用改（稅費工具遇到沒有 `results` 的檔案會提示「請在速算重新儲存一次」）。
+- 測試（本機，龍泉段一小段 449 地號專案＋兩位地主 300 坪、457.76 坪〔權重 1.1〕，地主負擔互易稅）：`results` 的分回銷坪 1,059.66／1,778.60 坪、車位 28.901／44.099 位、分回總價值 159,788.5／266,669.3 萬，與第④頁卡片完全一致；稅費工具匯入後總銷坪、分回單元、保留土地比例正確。無 JS 錯誤。
+
+---
+
 ## 2026-11-25｜Claude Code｜顧問費、信託費三種模式都可手填（萬/坪或總價）；融資期間加利息備註；委建明細金額顯示
 
 - 原因：都更顧問費、信託費原本寫死「基地坪 × 1 萬」，畫面上不能改，且只有合建兩項都收、自建只收顧問費、委建都不收。Daniel 決定：**不論型態，顧問費預設 1 萬/坪、信託費預設 0.5 萬/坪**，需要時手改。

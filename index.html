@@ -2349,6 +2349,38 @@ const ALL_FIELD_IDS=[
   'cm-consult','cm-consult-u','cm-trust','cm-trust-u',
 ];
 
+// 存檔時一併寫入都更合建的計算結果，給「都更稅費試算工具」讀（算法與 calcS4 相同，不碰畫面）
+function s4Results(){
+  const s2=ST.s2,u=s2?.res?.urban;
+  if(!u)return null;
+  const NV=negVals();
+  const ownerTotalSaleP=(u.ownerSaleP||0)+NV.ping;
+  const ownerPlanarT=(u.ownerPlanar||0)+NV.car,ownerMechT=u.ownerMech||0;
+  const basePing=(ST.aPing||0)*(u.pubBuy?(1-(u.pubR||0)):1);
+  const pPing=s2.pPing||0,pCar=s2.pCar||0,pMech=gf('s2-mprice');
+  const ownerVatTotW=(u.ownerVatPaid||0)/WAN;
+  const ownerRevW=ownerTotalSaleP*pPing+ownerPlanarT*pCar+ownerMechT*pMech;
+  return {
+    forTool:'urban-renewal-tax',
+    sitePing:ST.aPing||0,               // 全基地坪
+    urbanSitePing:u.aP||0,              // 都更合建部分的基地坪
+    totalSalePing:u.sP||0,              // 都更合建部分的總銷坪
+    ownerSalePing:ownerTotalSaleP,      // 地主總分回銷坪（含③頁讓坪）
+    ownerPlanar:ownerPlanarT,ownerMech:ownerMechT,
+    pricePing:pPing,priceCar:pCar,priceMech:pMech, // 萬
+    swapPayer:gv('s2-swap-payer'),ownerVatPaidWan:ownerVatTotW,
+    houseRatio:gf('s2-house'),
+    owners:owners.map(o=>{
+      const ratio=basePing>0?o.landPing/basePing:0;
+      const sp=ownerTotalSaleP*ratio*(o.weight||1);
+      const cp=ownerPlanarT*ratio,cm=ownerMechT*ratio;
+      const val=sp*pPing+cp*pCar+cm*pMech;
+      return {name:o.name,landPing:o.landPing,salePing:sp,carPlanar:cp,carMech:cm,valueWan:val,
+        vatWan:ownerRevW>0?ownerVatTotW*val/ownerRevW:0};
+    })
+  };
+}
+
 function saveProject(){
   runCalc(); // 儲存前先依目前輸入重算
   const data={
@@ -2358,7 +2390,8 @@ function saveProject(){
     inputs:{},
     owners:[...owners],
     g5:g5Export(),
-    neg:(negVals(),{...NEG})
+    neg:(negVals(),{...NEG}),
+    results:s4Results() // 給稅費試算工具讀；本工具載入時不讀
   };
   ALL_FIELD_IDS.forEach(id=>{
     const el=document.getElementById(id);
